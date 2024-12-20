@@ -179,7 +179,7 @@ static void emitReturn() {
     if (current->type == TYPE_INITIALIZER) {
         emitBytes(OP_GET_LOCAL, 0);
     } else {
-        emitByte(OP_NIL);
+        emitByte(OP_NULL);
     }
 
     emitByte(OP_RETURN);
@@ -481,7 +481,7 @@ static void literal(bool canAssign) {
     switch (parser.previous.type) {
         case TOKEN_FALSE: emitByte(OP_FALSE);
             break;
-        case TOKEN_NULL: emitByte(OP_NIL);
+        case TOKEN_NULL: emitByte(OP_NULL);
             break;
         case TOKEN_TRUE: emitByte(OP_TRUE);
             break;
@@ -634,6 +634,8 @@ ParseRule rules[] = {
     [TOKEN_THIS] = {this_, nullptr, PREC_NONE},
     [TOKEN_TRUE] = {literal, nullptr, PREC_NONE},
     [TOKEN_VAR] = {nullptr, nullptr, PREC_NONE},
+    [TOKEN_LET] = {nullptr, nullptr, PREC_NONE},
+    [TOKEN_CONST] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_WHILE] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_ERROR] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_EOF] = {nullptr, nullptr, PREC_NONE},
@@ -782,7 +784,7 @@ static void varDeclaration() {
     if (match(TOKEN_EQUAL)) {
         expression();
     } else {
-        emitByte(OP_NIL);
+        emitByte(OP_NULL);
     }
     consume(TOKEN_SEMICOLON,
             "Expect ';' after variable declaration.");
@@ -802,7 +804,7 @@ static void forStatement() {
 
     if (match(TOKEN_SEMICOLON)) {
         // No initializer.
-    } else if (match(TOKEN_VAR)) {
+    } else if (match(TOKEN_VAR) || match(TOKEN_LET) || match(TOKEN_CONST)) {
         varDeclaration();
     } else {
         expressionStatement();
@@ -908,6 +910,8 @@ static void synchronize() {
             case TOKEN_CLASS:
             case TOKEN_FUNC:
             case TOKEN_VAR:
+            case TOKEN_LET:
+            case TOKEN_CONST:
             case TOKEN_FOR:
             case TOKEN_IF:
             case TOKEN_WHILE:
@@ -928,7 +932,7 @@ static void declaration() {
         classDeclaration();
     } else if (match(TOKEN_FUNC)) {
         funDeclaration();
-    } else if (match(TOKEN_VAR)) {
+    } else if (match(TOKEN_VAR) || match(TOKEN_LET) || match(TOKEN_CONST)) {
         varDeclaration();
     } else {
         statement();
