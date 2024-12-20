@@ -1,0 +1,10 @@
+
+.idea/
+
+.vscode/
+
+cmake-build-debug/.cmake/api/v1/query/
+
+cmake-build-debug/.cmake/api/v1/reply/
+
+cmake-build-debug/

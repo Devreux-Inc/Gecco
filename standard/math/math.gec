@@ -1,0 +1,37 @@
+scope math;
+
+public constant class Math {
+
+    /**
+     * Cannot be initialized.
+     */
+    private constant init() {
+
+    }
+
+    /**
+     * The float value that is closer that any other to e.
+     */
+    public static const: Float E = 2.718281828459045;
+
+    /**
+     * The float value that is closer than any other to pi (π).
+     */
+    public static const: Float PI = 3.141592653589793;
+
+    /**
+     * The float value that is closer than any other to tau (τ).
+     */
+    public static const: Float TAU = 2.0 * PI;
+
+    /**
+     * Constant by which to multiple an angular value in degrees to obtain an angular value in radians.
+     */
+     public static const: Float DEGREES_TO_RADIANS = 0.017453292519943295;
+
+     /**
+      * Constant by which to multiple an angular value in degrees to obtain an angular value in radians.
+      */
+     public static const: Float DEGREES_TO_RADIANS = 0.017453292519943295;
+
+}
