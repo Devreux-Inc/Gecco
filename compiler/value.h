@@ -8,8 +8,6 @@
 #include <string.h>
 //< Optimization include-string
 
-#include "common.h"
-
 //> Strings forward-declare-obj
 typedef struct Obj Obj;
 //> forward-declare-obj-string
@@ -40,7 +38,7 @@ typedef uint64_t Value;
 #define IS_BOOL(value)      (((value) | 1) == TRUE_VAL)
 //< is-bool
 //> is-nil
-#define IS_NIL(value)       ((value) == NIL_VAL)
+#define IS_NULL(value)       ((value) == NULL_VAL)
 //< is-nil
 #define IS_NUMBER(value)    (((value) & QNAN) != QNAN)
 //< is-number
@@ -69,7 +67,7 @@ typedef uint64_t Value;
 #define TRUE_VAL        ((Value)(uint64_t)(QNAN | TAG_TRUE))
 //< false-true-vals
 //> nil-val
-#define NIL_VAL         ((Value)(uint64_t)(QNAN | TAG_NIL))
+#define NULL_VAL         ((Value)(uint64_t)(QNAN | TAG_NIL))
 //< nil-val
 #define NUMBER_VAL(num) numToValue(num)
 //< number-val
@@ -79,19 +77,21 @@ typedef uint64_t Value;
 //< obj-val
 //> value-to-num
 
-static inline double valueToNum(Value value) {
-  double num;
-  memcpy(&num, &value, sizeof(Value));
-  return num;
+static double valueToNum(Value value) {
+    double num;
+    memcpy(&num, &value, sizeof(Value));
+    return num;
 }
+
 //< value-to-num
 //> num-to-value
 
-static inline Value numToValue(double num) {
-  Value value;
-  memcpy(&value, &num, sizeof(double));
-  return value;
+static Value numToValue(double num) {
+    Value value;
+    memcpy(&value, &num, sizeof(double));
+    return value;
 }
+
 //< num-to-value
 
 #else
@@ -156,21 +156,29 @@ typedef struct {
 //> value-array
 
 typedef struct {
-  int capacity;
-  int count;
-  Value* values;
+    int capacity;
+    int count;
+    Value *values;
 } ValueArray;
+
 //< value-array
 //> array-fns-h
 
 //> Types of Values values-equal-h
 bool valuesEqual(Value a, Value b);
+
 //< Types of Values values-equal-h
-void initValueArray(ValueArray* array);
-void writeValueArray(ValueArray* array, Value value);
-void freeValueArray(ValueArray* array);
+void initValueArray(ValueArray *array);
+
+void writeValueArray(ValueArray *array, Value value);
+
+void freeValueArray(ValueArray *array);
+
 //< array-fns-h
 //> print-value-h
 void printValue(Value value);
+
 //< print-value-h
+double modulo(double inputA, double inputB);
+float power(float inputA, int inputB);
 #endif //value_h

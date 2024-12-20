@@ -108,7 +108,7 @@ void initVM() {
     resetStack();
     //< call-reset-stack
     //> Strings init-objects-root
-    vm.objects = NULL;
+    vm.objects = nullptr;
     //< Strings init-objects-root
     //> Garbage Collection init-gc-fields
     vm.bytesAllocated = 0;
@@ -118,7 +118,7 @@ void initVM() {
 
     vm.grayCount = 0;
     vm.grayCapacity = 0;
-    vm.grayStack = NULL;
+    vm.grayStack = nullptr;
     //< Garbage Collection init-gray-stack
     //> Global Variables init-globals
 
@@ -130,7 +130,7 @@ void initVM() {
     //> Methods and Initializers init-init-string
 
     //> null-init-string
-    vm.initString = NULL;
+    vm.initString = nullptr;
     //< null-init-string
     vm.initString = copyString("init", 4);
     //< Methods and Initializers init-init-string
@@ -148,7 +148,7 @@ void freeVM() {
     freeTable(&vm.strings);
     //< Hash Tables free-strings
     //> Methods and Initializers clear-init-string
-    vm.initString = NULL;
+    vm.initString = nullptr;
     //< Methods and Initializers clear-init-string
     //> Strings call-free-objects
     freeObjects();
@@ -383,7 +383,7 @@ static void defineMethod(ObjString *name) {
 //< Methods and Initializers define-method
 //> Types of Values is-falsey
 static bool isFalsey(Value value) {
-    return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+    return IS_NULL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }
 
 //< Types of Values is-falsey
@@ -511,7 +511,7 @@ static InterpretResult run() {
             }
             //< op-constant
             //> Types of Values interpret-literals
-            case OP_NIL: push(NIL_VAL);
+            case OP_NIL: push(NULL_VAL);
                 break;
             case OP_TRUE: push(BOOL_VAL(true));
                 break;
@@ -700,6 +700,26 @@ static InterpretResult run() {
             case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *);
                 break;
             case OP_DIVIDE: BINARY_OP(NUMBER_VAL, /);
+                break;
+            case OP_MOD:
+                if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
+                    double b = AS_NUMBER(pop());
+                    double a = AS_NUMBER(pop());
+                    push(NUMBER_VAL(modulo(a, b)));
+                } else {
+                    runtimeError("Operands must be two numbers.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                break;
+            case OP_POW:
+                if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
+                    int b = AS_NUMBER(pop());
+                    float a = AS_NUMBER(pop());
+                    push(NUMBER_VAL(power(a, b)));
+                } else {
+                    runtimeError("Operands must be two numbers.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
                 break;
             //< Types of Values op-arithmetic
             //> Types of Values op-not

@@ -3,6 +3,7 @@
 //
 
 //> Hash Tables table-c
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -18,7 +19,7 @@
 void initTable(Table* table) {
   table->count = 0;
   table->capacity = 0;
-  table->entries = NULL;
+  table->entries = nullptr;
 }
 //> free-table
 void freeTable(Table* table) {
@@ -40,7 +41,7 @@ static Entry* findEntry(Entry* entries, int capacity,
   uint32_t index = key->hash & (capacity - 1);
 //< Optimization initial-index
 //> find-entry-tombstone
-  Entry* tombstone = NULL;
+  Entry* tombstone = nullptr;
 
 //< find-entry-tombstone
   for (;;) {
@@ -52,7 +53,7 @@ static Entry* findEntry(Entry* entries, int capacity,
 */
 //> find-tombstone
     if (entry->key == NULL) {
-      if (IS_NIL(entry->value)) {
+      if (IS_NULL(entry->value)) {
         // Empty entry.
         return tombstone != NULL ? tombstone : entry;
       } else {
@@ -89,8 +90,8 @@ bool tableGet(Table* table, ObjString* key, Value* value) {
 static void adjustCapacity(Table* table, int capacity) {
   Entry* entries = ALLOCATE(Entry, capacity);
   for (int i = 0; i < capacity; i++) {
-    entries[i].key = NULL;
-    entries[i].value = NIL_VAL;
+    entries[i].key = nullptr;
+    entries[i].value = NULL_VAL;
   }
 //> re-hash
 
@@ -132,7 +133,7 @@ bool tableSet(Table* table, ObjString* key, Value value) {
   if (isNewKey) table->count++;
 */
 //> set-increment-count
-  if (isNewKey && IS_NIL(entry->value)) table->count++;
+  if (isNewKey && IS_NULL(entry->value)) table->count++;
 //< set-increment-count
 
   entry->key = key;
@@ -149,7 +150,7 @@ bool tableDelete(Table* table, ObjString* key) {
   if (entry->key == NULL) return false;
 
   // Place a tombstone in the entry.
-  entry->key = NULL;
+  entry->key = nullptr;
   entry->value = BOOL_VAL(true);
   return true;
 }
@@ -167,7 +168,7 @@ void tableAddAll(Table* from, Table* to) {
 //> table-find-string
 ObjString* tableFindString(Table* table, const char* chars,
                            int length, uint32_t hash) {
-  if (table->count == 0) return NULL;
+  if (table->count == 0) return nullptr;
 
 /* Hash Tables table-find-string < Optimization find-string-index
   uint32_t index = hash % table->capacity;
@@ -179,7 +180,7 @@ ObjString* tableFindString(Table* table, const char* chars,
     Entry* entry = &table->entries[index];
     if (entry->key == NULL) {
       // Stop if we find an empty non-tombstone entry.
-      if (IS_NIL(entry->value)) return NULL;
+      if (IS_NULL(entry->value)) return nullptr;
     } else if (entry->key->length == length &&
         entry->key->hash == hash &&
         memcmp(entry->key->chars, chars, length) == 0) {

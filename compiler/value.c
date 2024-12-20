@@ -10,7 +10,7 @@
 #include "value.h"
 
 void initValueArray(ValueArray *array) {
-    array->values = NULL;
+    array->values = nullptr;
     array->capacity = 0;
     array->count = 0;
 }
@@ -42,7 +42,7 @@ void printValue(Value value) {
 #ifdef NAN_BOXING
     if (IS_BOOL(value)) {
         printf(AS_BOOL(value) ? "true" : "false");
-    } else if (IS_NIL(value)) {
+    } else if (IS_NULL(value)) {
         printf("nil");
     } else if (IS_NUMBER(value)) {
         printf("%g", AS_NUMBER(value));
@@ -112,3 +112,19 @@ bool valuesEqual(Value a, Value b) {
 }
 
 //< Types of Values values-equal
+
+double modulo(double a, double b) {
+    int i = (int) a / (int) b;
+    return a - i * b;
+}
+
+float power(float x, int y) {
+    if (y == 0)
+        return 1;
+    float temp = power(x, y / 2);
+    if (y % 2 == 0)
+        return temp * temp;
+    if (y > 0)
+        return x * temp * temp;
+    return (temp * temp) / x;
+}

@@ -31,6 +31,12 @@ void freeChunk(Chunk *chunk) {
     initChunk(chunk);
 }
 
+/**
+ * Writes a chunk
+ * @param chunk Chunk
+ * @param byte uint8_t
+ * @param line int
+ */
 void writeChunk(Chunk *chunk, uint8_t byte, int line) {
     if (chunk->capacity < chunk->count + 1) {
         int oldCapacity = chunk->capacity;
