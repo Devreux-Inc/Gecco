@@ -7,6 +7,7 @@
 
 #include "vm.h"
 #include "command/command_defs.h"
+#include "err/status.h"
 #include "formatting/ansi_colors.h"
 
 /**
@@ -42,7 +43,7 @@ static char *readFile(const char *path) {
 
     if (file == NULL) {
         fprintf(stderr, "Could not open file \"%s\".\n", path);
-        exit(74);
+        exit(FILE_NOT_FOUND);
     }
 
     fseek(file, 0L, SEEK_END);
@@ -52,13 +53,13 @@ static char *readFile(const char *path) {
     char *buffer = malloc(fileSize + 1);
     if (buffer == NULL) {
         fprintf(stderr, "Not enough memory to read \"%s\".\n", path);
-        exit(74);
+        exit(OUT_OF_MEMORY);
     }
 
     size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
     if (bytesRead < fileSize) {
         fprintf(stderr, "Could not read file \"%s\".\n", path);
-        exit(74);
+        exit(FILE_NOT_READABLE);
     }
 
     buffer[bytesRead] = '\0';
@@ -76,8 +77,8 @@ static void runFile(const char *path) {
     InterpretResult result = interpret(source);
     free(source); // [owner]
 
-    if (result == INTERPRET_COMPILE_ERROR) exit(65);
-    if (result == INTERPRET_RUNTIME_ERROR) exit(70);
+    if (result == INTERPRET_COMPILE_ERROR) exit(COMPILER_ERROR);
+    if (result == INTERPRET_RUNTIME_ERROR) exit(RUNTIME_ERROR);
 }
 
 /**
@@ -96,9 +97,9 @@ int main(const int argc, const char *argv[]) {
     } else {
         fprintf(stderr, "Usage: gecco [path]\n");
         list_commands();
-        exit(64);
+        exit(EXIT_FAILURE_MINOR);
     }
 
     freeVM();
-    return 0;
+    return EXIT_SUCCESS;
 }

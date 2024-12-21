@@ -28,4 +28,5 @@ add_executable(Gecco
         compiler/command/command_defs.h
         compiler/command/command_defs.c
         compiler/formatting/ansi_colors.h
+        compiler/err/status.h
 )
