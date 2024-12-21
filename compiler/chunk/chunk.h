@@ -5,8 +5,8 @@
 #ifndef gecco_chunk_h
 #define gecco_chunk_h
 
-#include "common.h"
-#include "value.h"
+#include "../common.h"
+#include "../value.h"
 
 typedef enum {
     OP_CONSTANT,

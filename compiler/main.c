@@ -6,14 +6,22 @@
 #include <stdlib.h>
 
 #include "vm.h"
+#include "command/command_defs.h"
+#include "formatting/ansi_colors.h"
 
 /**
  * Run -> Evaluate -> Print -> Loop.
  */
 static void repl() {
     char line[1024];
+
+    printf(BOLD "                    🔁 Gecco REPL 🔁\n" RESET);
+    printf("This is the command line REPL (read-eval-print-loop) for" BOLD " Gecco" RESET ". \n"
+        "You can run any code in the terminal and it will run as if \nit is part of a" BOLD " .gec" RESET " file."
+        " All code is ran through the interpreter.\n");
+
     for (;;) {
-        printf("> ");
+        printf(BOLD "\n> " RESET);
 
         if (!fgets(line, sizeof(line), stdin)) {
             printf("\n");
@@ -87,6 +95,7 @@ int main(const int argc, const char *argv[]) {
         runFile(argv[1]);
     } else {
         fprintf(stderr, "Usage: gecco [path]\n");
+        list_commands();
         exit(64);
     }
 

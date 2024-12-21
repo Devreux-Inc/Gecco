@@ -4,8 +4,8 @@ project(Gecco C)
 set(CMAKE_C_STANDARD 23)
 
 add_executable(Gecco
-        compiler/chunk.c
-        compiler/chunk.h
+        compiler/chunk/chunk.c
+        compiler/chunk/chunk.h
         compiler/common.h
         compiler/compiler.c
         compiler/compiler.h
@@ -24,4 +24,8 @@ add_executable(Gecco
         compiler/value.h
         compiler/vm.c
         compiler/vm.h
+        compiler/command/version.c
+        compiler/command/command_defs.h
+        compiler/command/command_defs.c
+        compiler/formatting/ansi_colors.h
 )

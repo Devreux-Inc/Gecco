@@ -6,7 +6,7 @@
 #define object_h
 
 #include "common.h"
-#include "chunk.h"
+#include "chunk/chunk.h"
 #include "table.h"
 #include "value.h"
 

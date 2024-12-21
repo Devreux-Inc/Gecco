@@ -115,7 +115,13 @@ static TokenType checkKeyword(int start, int length, const char *rest, TokenType
 
 static TokenType identifierType() {
     switch (scanner.start[0]) {
-        case 'a': return checkKeyword(1, 2, "nd", TOKEN_AND);
+        case 'a':
+            if (scanner.current - scanner.start > 2) {
+                switch (scanner.start[2]) {
+                    case 'd': return checkKeyword(1, 1, "d", TOKEN_AND);
+                    case 'y': return checkKeyword(1, 2, "y", TOKEN_ANY);
+                }
+            }
         //===---- C ----====
         case 'c':
             if (scanner.current - scanner.start > 1) {
@@ -156,6 +162,10 @@ static TokenType identifierType() {
         //===---- T ----====
         case 'v': return checkKeyword(1, 2, "ar", TOKEN_VAR);
         case 'w': return checkKeyword(1, 4, "hile", TOKEN_WHILE);
+
+        //===---- CAPITALS ----====
+        case 'N': return checkKeyword(1, 5, "umber", TOKEN_NUMBER_LITERAL);
+        case 'S': return checkKeyword(1, 5, "tring", TOKEN_STRING_LITERAL);
     }
 
     //< keywords
@@ -210,26 +220,26 @@ Token scanToken() {
         case '{': return makeToken(TOKEN_LEFT_BRACE);
         case '}': return makeToken(TOKEN_RIGHT_BRACE);
         case ';': return makeToken(TOKEN_SEMICOLON);
+        case ':': return makeToken(TOKEN_COLON);
         case ',': return makeToken(TOKEN_COMMA);
         case '.': return makeToken(TOKEN_DOT);
-        case '-': return makeToken(TOKEN_MINUS);
+        case '-': return makeToken(match('>') ? TOKEN_RIGHT_POINTER : TOKEN_MINUS);
         case '+': return makeToken(TOKEN_PLUS);
         case '/': return makeToken(TOKEN_SLASH);
         case '*': return makeToken(TOKEN_STAR);
         case '%': return makeToken(TOKEN_MOD);
         case '^': return makeToken(TOKEN_POW);
         case '!':
-            return makeToken(
-                match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+            return makeToken(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
         case '=':
-            return makeToken(
-                match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
-        case '<':
-            return makeToken(
-                match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+            return makeToken(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+        case '<': {
+            if (match('=')) return makeToken(TOKEN_LESS_EQUAL);
+            if (match('-')) return makeToken(TOKEN_LEFT_POINTER);
+            return makeToken(TOKEN_LESS);
+        }
         case '>':
-            return makeToken(
-                match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+            return makeToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
         case '"': return string();
     }
 

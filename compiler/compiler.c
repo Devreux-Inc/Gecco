@@ -219,7 +219,7 @@ static void initCompiler(Compiler *compiler, FunctionType type) {
     compiler->function = newFunction();
     current = compiler;
     if (type != TYPE_SCRIPT) {
-        current->function->name = copyString(parser.previous.start,parser.previous.length);
+        current->function->name = copyString(parser.previous.start, parser.previous.length);
     }
 
     Local *local = &current->locals[current->localCount++];
@@ -272,9 +272,13 @@ static void endScope() {
 }
 
 static void expression();
+
 static void statement();
+
 static void declaration();
+
 static ParseRule *getRule(TokenType type);
+
 static void parsePrecedence(Precedence precedence);
 
 static uint8_t identifierConstant(Token *name) {
@@ -451,6 +455,10 @@ static void binary(bool canAssign) {
             break;
         case TOKEN_POW: emitByte(OP_POW);
             break;
+        case TOKEN_RIGHT_POINTER: emitByte(OP_POINT_RIGHT);
+            break;
+        case TOKEN_LEFT_POINTER: emitByte(OP_POINT_LEFT);
+            break;
         default: return; // Unreachable.
     }
 }
@@ -604,6 +612,7 @@ ParseRule rules[] = {
     [TOKEN_MINUS] = {unary, binary, PREC_TERM},
     [TOKEN_PLUS] = {nullptr, binary, PREC_TERM},
     [TOKEN_SEMICOLON] = {nullptr, nullptr, PREC_NONE},
+    [TOKEN_COLON] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_SLASH] = {nullptr, binary, PREC_FACTOR},
     [TOKEN_STAR] = {nullptr, binary, PREC_FACTOR},
     [TOKEN_MOD] = {nullptr, binary, PREC_FACTOR},
@@ -616,9 +625,13 @@ ParseRule rules[] = {
     [TOKEN_GREATER_EQUAL] = {nullptr, binary, PREC_COMPARISON},
     [TOKEN_LESS] = {nullptr, binary, PREC_COMPARISON},
     [TOKEN_LESS_EQUAL] = {nullptr, binary, PREC_COMPARISON},
+    [TOKEN_RIGHT_PAREN] = {nullptr, nullptr, PREC_NONE},
+    [TOKEN_LEFT_POINTER] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_IDENTIFIER] = {variable, nullptr, PREC_NONE},
     [TOKEN_STRING] = {string, nullptr, PREC_NONE},
     [TOKEN_NUMBER] = {number, nullptr, PREC_NONE},
+    [TOKEN_NUMBER_LITERAL] = {nullptr, nullptr, PREC_NONE},
+    [TOKEN_STRING_LITERAL] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_AND] = {nullptr, and_, PREC_AND},
     [TOKEN_CLASS] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_ELSE] = {nullptr, nullptr, PREC_NONE},
@@ -637,6 +650,7 @@ ParseRule rules[] = {
     [TOKEN_LET] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_CONST] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_WHILE] = {nullptr, nullptr, PREC_NONE},
+    [TOKEN_ANY] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_ERROR] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_EOF] = {nullptr, nullptr, PREC_NONE},
 };
@@ -738,7 +752,7 @@ static void classDeclaration() {
     classCompiler.enclosing = currentClass;
     currentClass = &classCompiler;
 
-    if (match(TOKEN_LESS)) {
+    if (match(TOKEN_RIGHT_POINTER)) {
         consume(TOKEN_IDENTIFIER, "Expect superclass name.");
         variable(false);
 
@@ -778,7 +792,64 @@ static void funDeclaration() {
     defineVariable(global);
 }
 
+/**
+ * Sets a type that a value must return. Only reads the type but does not enforce.
+ * @param optional Allows the user to optionally set a type for a var or force for a const
+ */
+static TokenType typeSet(bool optional) {
+    if (optional == false && check(TOKEN_EQUAL)) error("Type must be set.");
+    const char *message = "Value type must be declared.";
+
+    if (check(TOKEN_STRING_LITERAL)) {
+        emitByte(OP_TYPE);
+        consume(TOKEN_STRING_LITERAL, message);
+        return TOKEN_STRING;
+    }
+
+    if (check(TOKEN_NUMBER_LITERAL)) {
+        emitByte(OP_TYPE);
+        consume(TOKEN_NUMBER_LITERAL, message);
+        return TOKEN_NUMBER;
+    }
+
+    if (check(TOKEN_IDENTIFIER)) {
+        emitByte(OP_TYPE);
+        consume(TOKEN_IDENTIFIER, message);
+        return TOKEN_IDENTIFIER;
+    }
+
+    if (check(TOKEN_ANY)) {
+        emitByte(OP_TYPE);
+        consume(TOKEN_ANY, message);
+        return TOKEN_ANY;
+    }
+
+    error("Type value undefined.");
+}
+
 static void varDeclaration() {
+    uint8_t global = parseVariable("Expect variable name.");
+    TokenType type = TOKEN_NULL;
+
+    if (match(TOKEN_COLON)) {
+        type = typeSet(true);
+    }
+
+    if (match(TOKEN_EQUAL)) {
+        expression();
+    } else {
+        emitByte(OP_NULL);
+    }
+    consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+
+    if (type != TOKEN_NULL) {
+        printf("%p\n", &type);
+    }
+
+    defineVariable(global);
+}
+
+static void letDeclaration() {
     uint8_t global = parseVariable("Expect variable name.");
 
     if (match(TOKEN_EQUAL)) {
@@ -786,9 +857,25 @@ static void varDeclaration() {
     } else {
         emitByte(OP_NULL);
     }
-    consume(TOKEN_SEMICOLON,
-            "Expect ';' after variable declaration.");
+    consume(TOKEN_SEMICOLON, "Expect ';' after let declaration.");
+    defineVariable(global);
+}
 
+static void constDeclaration() {
+    uint8_t global = parseVariable("Expect variable name.");
+
+    if (match(TOKEN_COLON)) {
+        typeSet(false);
+    } else {
+        error("const declaration types must be explicitly declared.");
+    }
+
+    if (match(TOKEN_EQUAL)) {
+        expression();
+    } else {
+        error("const values must be defined.");
+    }
+    consume(TOKEN_SEMICOLON, "Expect ';' after const declaration.");
     defineVariable(global);
 }
 
@@ -804,8 +891,10 @@ static void forStatement() {
 
     if (match(TOKEN_SEMICOLON)) {
         // No initializer.
-    } else if (match(TOKEN_VAR) || match(TOKEN_LET) || match(TOKEN_CONST)) {
+    } else if (match(TOKEN_VAR)) {
         varDeclaration();
+    } else if (match(TOKEN_LET)) {
+        letDeclaration();
     } else {
         expressionStatement();
     }
@@ -932,8 +1021,12 @@ static void declaration() {
         classDeclaration();
     } else if (match(TOKEN_FUNC)) {
         funDeclaration();
-    } else if (match(TOKEN_VAR) || match(TOKEN_LET) || match(TOKEN_CONST)) {
+    } else if (match(TOKEN_VAR)) {
         varDeclaration();
+    } else if (match(TOKEN_LET)) {
+        letDeclaration();
+    } else if (match(TOKEN_CONST)) {
+        constDeclaration();
     } else {
         statement();
     }
