@@ -10,8 +10,8 @@
 #include <string.h>
 #include <time.h>
 #include "common.h"
-#include "compiler.h"
-#include "debug.h"
+#include "compiler/compiler.h"
+#include "debug/debug.h"
 #include "object.h"
 #include "memory.h"
 #include "vm.h"

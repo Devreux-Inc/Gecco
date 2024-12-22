@@ -5,7 +5,7 @@
 //> Chunks of Bytecode memory-c
 #include <stdlib.h>
 
-#include "compiler.h"
+#include "compiler/compiler.h"
 #include "memory.h"
 #include "vm.h"
 

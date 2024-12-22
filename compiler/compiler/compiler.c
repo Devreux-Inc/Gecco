@@ -3,23 +3,19 @@
 //
 
 //> Scanning on Demand compiler-c
-#include <stdio.h>
-//> Compiling Expressions compiler-include-stdlib
-#include <stdlib.h>
-//< Compiling Expressions compiler-include-stdlib
-//> Local Variables compiler-include-string
-#include <string.h>
-//< Local Variables compiler-include-string
 
-#include "common.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "../common.h"
 #include "compiler.h"
-//> Garbage Collection compiler-include-memory
 #include "memory.h"
-//< Garbage Collection compiler-include-memory
-#include "scanner.h"
+#include "../scanner.h"
+#include "../object.h"
+#include "../memory.h"
 
 #ifdef DEBUG_PRINT_CODE
-#include "debug.h"
+#include "../debug.h"
 #endif
 
 typedef struct {

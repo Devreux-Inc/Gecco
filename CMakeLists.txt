@@ -7,10 +7,10 @@ add_executable(Gecco
         compiler/chunk/chunk.c
         compiler/chunk/chunk.h
         compiler/common.h
-        compiler/compiler.c
-        compiler/compiler.h
-        compiler/debug.c
-        compiler/debug.h
+        compiler/compiler/compiler.c
+        compiler/compiler/compiler.h
+        compiler/debug/debug.c
+        compiler/debug/debug.h
         compiler/main.c
         compiler/memory.c
         compiler/memory.h
