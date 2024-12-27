@@ -3,7 +3,7 @@
 //
 
 #include "chunk.h"
-#include "../memory.h"
+#include "../memory/memory.h"
 #include "../vm.h"
 
 /**

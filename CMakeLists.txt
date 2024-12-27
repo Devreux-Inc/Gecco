@@ -12,8 +12,8 @@ add_executable(Gecco
         compiler/debug/debug.c
         compiler/debug/debug.h
         compiler/main.c
-        compiler/memory.c
-        compiler/memory.h
+        compiler/memory/memory.c
+        compiler/memory/memory.h
         compiler/object.c
         compiler/object.h
         compiler/scanner.c
@@ -24,9 +24,11 @@ add_executable(Gecco
         compiler/value.h
         compiler/vm.c
         compiler/vm.h
-        compiler/command/version.c
         compiler/command/command_defs.h
         compiler/command/command_defs.c
         compiler/formatting/ansi_colors.h
         compiler/err/status.h
+        compiler/command/command_handler.c
+        compiler/command/command_handler.h
+        compiler/err/status.c
 )

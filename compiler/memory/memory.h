@@ -5,7 +5,7 @@
 #ifndef memory_h
 #define memory_h
 
-#include "object.h"
+#include "../object.h"
 
 #define ALLOCATE(type, count) (type*)reallocate(NULL, 0, sizeof(type) * (count))
 

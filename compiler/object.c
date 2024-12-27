@@ -7,11 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "memory.h"
 #include "object.h"
 #include "table.h"
 #include "value.h"
 #include "vm.h"
+#include "memory/memory.h"
 
 #define ALLOCATE_OBJ(type, objectType) (type*)allocateObject(sizeof(type), objectType)
 
@@ -169,5 +169,3 @@ void printObject(Value value) {
             break;
     }
 }
-
-//< print-object

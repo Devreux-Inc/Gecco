@@ -136,7 +136,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
       printValue(chunk->constants.values[constant]);
       printf("\n");
 
-      ObjFunction* function = AS_FUNCTION(
+      const ObjFunction* function = AS_FUNCTION(
           chunk->constants.values[constant]);
       for (int j = 0; j < function->upvalueCount; j++) {
         int isLocal = chunk->code[offset++];

@@ -6,76 +6,32 @@
 #define value_h
 
 #include <string.h>
-//< Optimization include-string
 
-//> Strings forward-declare-obj
 typedef struct Obj Obj;
-//> forward-declare-obj-string
 typedef struct ObjString ObjString;
-//< forward-declare-obj-string
-
-//< Strings forward-declare-obj
-//> Optimization nan-boxing
 #ifdef NAN_BOXING
-//> qnan
 
-//> sign-bit
 #define SIGN_BIT ((uint64_t)0x8000000000000000)
-//< sign-bit
 #define QNAN     ((uint64_t)0x7ffc000000000000)
-//< qnan
-//> tags
-
 #define TAG_NIL   1 // 01.
 #define TAG_FALSE 2 // 10.
 #define TAG_TRUE  3 // 11.
-//< tags
 
 typedef uint64_t Value;
-//> is-number
 
-//> is-bool
 #define IS_BOOL(value)      (((value) | 1) == TRUE_VAL)
-//< is-bool
-//> is-nil
-#define IS_NULL(value)       ((value) == NULL_VAL)
-//< is-nil
+#define IS_NULL(value)      ((value) == NULL_VAL)
 #define IS_NUMBER(value)    (((value) & QNAN) != QNAN)
-//< is-number
-//> is-obj
-#define IS_OBJ(value) \
-    (((value) & (QNAN | SIGN_BIT)) == (QNAN | SIGN_BIT))
-//< is-obj
-//> as-number
-
-//> as-bool
+#define IS_OBJ(value)       (((value) & (QNAN | SIGN_BIT)) == (QNAN | SIGN_BIT))
 #define AS_BOOL(value)      ((value) == TRUE_VAL)
-//< as-bool
 #define AS_NUMBER(value)    valueToNum(value)
-//< as-number
-//> as-obj
-#define AS_OBJ(value) \
-    ((Obj*)(uintptr_t)((value) & ~(SIGN_BIT | QNAN)))
-//< as-obj
-//> number-val
-
-//> bool-val
-#define BOOL_VAL(b)     ((b) ? TRUE_VAL : FALSE_VAL)
-//< bool-val
-//> false-true-vals
-#define FALSE_VAL       ((Value)(uint64_t)(QNAN | TAG_FALSE))
-#define TRUE_VAL        ((Value)(uint64_t)(QNAN | TAG_TRUE))
-//< false-true-vals
-//> nil-val
-#define NULL_VAL         ((Value)(uint64_t)(QNAN | TAG_NIL))
-//< nil-val
-#define NUMBER_VAL(num) numToValue(num)
-//< number-val
-//> obj-val
-#define OBJ_VAL(obj) \
-    (Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj))
-//< obj-val
-//> value-to-num
+#define AS_OBJ(value)       ((Obj*)(uintptr_t)((value) & ~(SIGN_BIT | QNAN)))
+#define BOOL_VAL(b)         ((b) ? TRUE_VAL : FALSE_VAL)
+#define FALSE_VAL           ((Value)(uint64_t)(QNAN | TAG_FALSE))
+#define TRUE_VAL            ((Value)(uint64_t)(QNAN | TAG_TRUE))
+#define NULL_VAL            ((Value)(uint64_t)(QNAN | TAG_NIL))
+#define NUMBER_VAL(num)     numToValue(num)
+#define OBJ_VAL(obj)        (Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj))
 
 static double valueToNum(Value value) {
     double num;
@@ -83,28 +39,19 @@ static double valueToNum(Value value) {
     return num;
 }
 
-//< value-to-num
-//> num-to-value
-
 static Value numToValue(double num) {
     Value value;
     memcpy(&value, &num, sizeof(double));
     return value;
 }
 
-//< num-to-value
-
 #else
 
-//< Optimization nan-boxing
-//> Types of Values value-type
 typedef enum {
   VAL_BOOL,
   VAL_NIL, // [user-types]
   VAL_NUMBER,
-//> Strings val-obj
   VAL_OBJ
-//< Strings val-obj
 } ValueType;
 
 //< Types of Values value-type
@@ -152,8 +99,6 @@ typedef struct {
 //> Optimization end-if-nan-boxing
 
 #endif
-//< Optimization end-if-nan-boxing
-//> value-array
 
 typedef struct {
     int capacity;
@@ -161,24 +106,18 @@ typedef struct {
     Value *values;
 } ValueArray;
 
-//< value-array
-//> array-fns-h
-
-//> Types of Values values-equal-h
 bool valuesEqual(Value a, Value b);
 
-//< Types of Values values-equal-h
 void initValueArray(ValueArray *array);
 
 void writeValueArray(ValueArray *array, Value value);
 
 void freeValueArray(ValueArray *array);
 
-//< array-fns-h
-//> print-value-h
 void printValue(Value value);
 
-//< print-value-h
 double modulo(double inputA, double inputB);
+
 float power(float inputA, int inputB);
+
 #endif //value_h

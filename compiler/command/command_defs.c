@@ -43,3 +43,18 @@ void list_commands() {
     helper();
     example_command();
 }
+
+void print_version() {
+    printf("Gecco Version: %s\n", GECCO_VERSION);
+    printf("GeccoVM Version: %s\n", GECCO_VM_VERSION);
+    printf("Gecco REPL Version: %s\n", GECCO_REPL_VERSION);
+}
+
+void print_credits() {
+    printf("%s\n", "2024 © The Gecco Contributors.");
+}
+
+void unknown_command(const char *command) {
+    printf("Unknown command: %s\n", command);
+    printf("Use flag '%s' for available commands.\n", "--help");
+}

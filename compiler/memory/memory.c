@@ -5,9 +5,9 @@
 //> Chunks of Bytecode memory-c
 #include <stdlib.h>
 
-#include "compiler/compiler.h"
+#include "../compiler/compiler.h"
 #include "memory.h"
-#include "vm.h"
+#include "../vm.h"
 
 #ifdef DEBUG_LOG_GC
 #include <stdio.h>
