@@ -9,11 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "common.h"
-#include "compiler/compiler.h"
-#include "debug/debug.h"
-#include "object.h"
-#include "memory/memory.h"
+#include "../common.h"
+#include "../compiler/compiler.h"
+#include "../debug/debug.h"
+#include "../object.h"
+#include "../memory/memory.h"
 #include "vm.h"
 
 VM vm; // [one]
@@ -425,8 +425,7 @@ static InterpretResult run() {
                     double a = AS_NUMBER(pop());
                     push(NUMBER_VAL(a + b));
                 } else {
-                    runtimeError(
-                        "Operands must be two numbers or two strings.");
+                    runtimeError("Operands must be two numbers or two strings.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 break;
@@ -535,8 +534,7 @@ static InterpretResult run() {
                     uint8_t isLocal = READ_BYTE();
                     uint8_t index = READ_BYTE();
                     if (isLocal) {
-                        closure->upvalues[i] =
-                                captureUpvalue(frame->slots + index);
+                        closure->upvalues[i] = captureUpvalue(frame->slots + index);
                     } else {
                         closure->upvalues[i] = frame->closure->upvalues[index];
                     }
@@ -584,8 +582,7 @@ static InterpretResult run() {
                 }
 
                 ObjClass *subclass = AS_CLASS(peek(0));
-                tableAddAll(&AS_CLASS(superclass)->methods,
-                            &subclass->methods);
+                tableAddAll(&AS_CLASS(superclass)->methods, &subclass->methods);
                 pop(); // Subclass.
                 break;
             }

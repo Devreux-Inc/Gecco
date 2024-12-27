@@ -10,7 +10,7 @@
 #include "object.h"
 #include "table.h"
 #include "value.h"
-#include "vm.h"
+#include "geccovm/vm.h"
 #include "memory/memory.h"
 
 #define ALLOCATE_OBJ(type, objectType) (type*)allocateObject(sizeof(type), objectType)

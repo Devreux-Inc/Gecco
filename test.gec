@@ -1,0 +1,7 @@
+class Math {
+    add(x, y) {
+        return x + y;
+    }
+}
+
+print Math().add(10, 10);

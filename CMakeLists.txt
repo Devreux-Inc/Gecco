@@ -22,8 +22,8 @@ add_executable(Gecco
         compiler/table.h
         compiler/value.c
         compiler/value.h
-        compiler/vm.c
-        compiler/vm.h
+        compiler/geccovm/vm.c
+        compiler/geccovm/vm.h
         compiler/command/command_defs.h
         compiler/command/command_defs.c
         compiler/formatting/ansi_colors.h
@@ -31,4 +31,7 @@ add_executable(Gecco
         compiler/command/command_handler.c
         compiler/command/command_handler.h
         compiler/err/status.c
+        compiler/repl/repl.c
+        compiler/repl/repl.h
+        compiler/version/version.h
 )

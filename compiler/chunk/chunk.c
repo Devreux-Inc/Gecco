@@ -4,7 +4,7 @@
 
 #include "chunk.h"
 #include "../memory/memory.h"
-#include "../vm.h"
+#include "../geccovm/vm.h"
 
 /**
  * Initializes a chunk of code to be interpreted.

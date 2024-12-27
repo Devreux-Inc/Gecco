@@ -5,39 +5,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "vm.h"
+#include "geccovm/vm.h"
 #include "command/command_defs.h"
 #include "command/command_handler.h"
 #include "err/status.h"
-#include "formatting/ansi_colors.h"
-
-/**
- * Run -> Evaluate -> Print -> Loop.
- */
-static void repl() {
-    char line[1024];
-
-    printf(BOLD "                    🔁 Gecco REPL 🔁\n" RESET);
-    printf("This is the command line REPL (read-eval-print-loop) for" BOLD " Gecco" RESET ". \n"
-        "You can run any code in the terminal and it will run as if \nit is part of a" BOLD " .gec" RESET " file."
-        " All code is ran through the interpreter.\n");
-
-    for (;;) {
-        printf(BOLD "\n> " RESET);
-
-        if (!fgets(line, sizeof(line), stdin)) {
-            printf("\n");
-            break;
-        }
-
-        interpret(line);
-    }
-}
 
 /**
  * Gets the extension of a passed in file.
- * @param filename the fully qualified file name
- * @return the extension
+ * @param filename the fully qualified file name.
+ * @return the extension.
  */
 const char *get_file_extension(const char *filename) {
     const char *dot = strrchr(filename, '.');
@@ -45,6 +21,14 @@ const char *get_file_extension(const char *filename) {
     return dot + 1;
 }
 
+/**
+ * Checks for a .gec or .gc file extension.
+ * GEC of GC are the only valid file types
+ * for Gecco to execute.
+ *
+ * @param extension Either .gec or .gc
+ * @return true if the file extension is valid.
+ */
 bool file_extension_is_valid(const char *extension) {
     if (strcmp(extension, "gec") == 0 || strcmp(extension, "gc") == 0) return true;
     return false;
@@ -52,8 +36,8 @@ bool file_extension_is_valid(const char *extension) {
 
 /**
  * Allocates a file into the memory of the computer.
- * @param path The path of the file
- * @return a character array
+ * @param path The path of the file.
+ * @return a character array.
  */
 static char *readFile(const char *path) {
     FILE *file = fopen(path, "rb");
@@ -86,49 +70,63 @@ static char *readFile(const char *path) {
 }
 
 /**
- * Executes a .gec file.
- * @param path The file path of the runnable
+ * Executes a .gec or .gc file.
+ * @param path The file path of the runnable.
  */
 static void runFile(const char *path) {
     char *source = readFile(path);
     InterpretResult result = interpret(source);
     free(source); // [owner]
 
-    if (result == INTERPRET_COMPILE_ERROR) exit(exit_status(COMPILER_ERROR));
-    if (result == INTERPRET_RUNTIME_ERROR) exit(exit_status(RUNTIME_ERROR));
+    if (result == INTERPRET_COMPILE_ERROR) {
+        freeVM();
+        exit(exit_status(COMPILER_ERROR));
+    }
+    if (result == INTERPRET_RUNTIME_ERROR) {
+        freeVM();
+        exit(exit_status(RUNTIME_ERROR));
+    }
 }
 
 /**
  * The main entry point for Gecco. This starts the program.
- * @param argc Arguments length
- * @param argv Each appended argument
- * @return EXIT_SUCCESS if the program was a success
+ * @param argc Arguments length.
+ * @param argv Each appended argument.
+ * @return EXIT_SUCCESS if the program was a success.
  */
 int main(const int argc, const char *argv[]) {
     initVM();
 
-    if (argc == 1) {
-        repl();
-    } else if (argc >= 2 && argc < 4) {
-        if (qualified_command(argv[1])) return EXIT_SUCCESS;
+    if (argc >= 2 && argc < 4) {
+        if (qualified_command(argv[1])) {
+
+            freeVM();
+            return EXIT_SUCCESS;
+        }
 
         if (strcmp(argv[1], "--run") == 0) {
             const char *file_type = get_file_extension(argv[2]);
             if (file_extension_is_valid(file_type)) {
                 runFile(argv[2]);
+
+                freeVM();
                 return exit_status(EXIT_SUCCESS);
             }
             printf("File type not recognized '%s'.\n", file_type);
+
+            freeVM();
             return exit_status(EXIT_FAILURE);
         }
 
         unknown_command(argv[1]);
+
+        freeVM();
         return exit_status(EXIT_FAILURE_MAJOR);
     } else {
         unknown_command(argv[2]);
+
+        freeVM();
         return exit_status(EXIT_FAILURE_MINOR);
     }
 
-    freeVM();
-    return exit_status(EXIT_SUCCESS);
 }

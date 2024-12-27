@@ -4,11 +4,13 @@
 
 #include "command_defs.h"
 #include "../formatting/ansi_colors.h"
+#include "../version/version.h"
 
 Command commands[] = {
     {"version", "--version", "| Lists the current Gecco version."},
     {"help", "--help", "   | Lists all available commands for Gecco."},
     {"run", "--run", "    | Flag before a file and then include <file path>."},
+    {"repl", "--repl", "   | Runs the command line repl."},
     {"credits", "--credits", "| Lists contributors to Gecco."},
     {"verbose", "--verbose", "| Verbose mode."}
 };
@@ -29,7 +31,7 @@ static void example_command() {
 static void helper() {
     printf(BOLD "\n          ⚠️ Why Am I Seeing This? ⚠️" RESET "\n");
     printf("You either inputted an invalid command or used the help command.\nThe above list provides all possible commands "
-           "that can follow \nthe" BOLD " gecco " RESET "main command. Need more help? Go to https://gecco.dev");
+           "that can follow\n the" BOLD " gecco " RESET "main command. Need more help? Go to https://gecco.dev");
     printf("\n");
 }
 
@@ -37,7 +39,7 @@ void list_commands() {
     printf( BOLD "\n%2s\n" RESET, "           🔎  Available Commands  🔎           ");
     for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
         const Command command = commands[i];
-        printf(GREEN BOLD "▫️ %s:" RESET BOLD " %10s" RESET BLUE " %10s\n" RESET, command.name, command.usage, command.helper);
+        printf(GREEN BOLD "▫️ %s:" RESET BOLD " %10s" RESET CYAN " %10s\n" RESET, command.name, command.usage, command.helper);
     }
 
     helper();

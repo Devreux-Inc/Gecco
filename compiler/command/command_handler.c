@@ -6,9 +6,19 @@
 #include "command_handler.h"
 
 #include "command_defs.h"
+#include "../repl/repl.h"
+
+static void execute(const char *command) {
+    system(command);
+}
+
+static void clear() {
+    execute("clear");
+}
 
 bool qualified_command(const char *command) {
     if (strcmp(command, "--help") == 0 || strcmp(command, "?") == 0) {
+        clear();
         list_commands();
         return true;
     }
@@ -21,6 +31,12 @@ bool qualified_command(const char *command) {
     if (strcmp(command, "--credits") == 0) {
         print_credits();
         return true;
+    }
+
+    if (strcmp(command, "--repl") == 0) {
+        clear();
+        repl();
+        return false;
     }
 
     if (strcmp(command, "--run") == 0) {

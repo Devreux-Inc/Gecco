@@ -8,9 +8,9 @@
 /* A Virtual Machine vm-h < Calls and Functions vm-include-object
 #include "chunk.h"
 */
-#include "object.h"
-#include "table.h"
-#include "value.h"
+#include "../object.h"
+#include "../table.h"
+#include "../value.h"
 
 //< stack-max
 /* A Virtual Machine stack-max < Calls and Functions frame-max

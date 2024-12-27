@@ -7,7 +7,7 @@
 
 #include "../compiler/compiler.h"
 #include "memory.h"
-#include "../vm.h"
+#include "../geccovm/vm.h"
 
 #ifdef DEBUG_LOG_GC
 #include <stdio.h>
@@ -16,6 +16,13 @@
 
 #define GC_HEAP_GROW_FACTOR 2
 
+/**
+ * Reallocates a memory assignment.
+ * @param pointer
+ * @param oldSize
+ * @param newSize
+ * @return the result
+ */
 void *reallocate(void *pointer, size_t oldSize, size_t newSize) {
     vm.bytesAllocated += newSize - oldSize;
     if (newSize > oldSize) {
