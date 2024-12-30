@@ -18,6 +18,13 @@
 
 #define UINT8_COUNT (UINT8_MAX + 1)
 
+#ifdef __unix__
+#elif defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)
+#define OS_Windows
+#endif
+
+bool isWindows();
+
 #endif //common_h
 
 #undef DEBUG_PRINT_CODE

@@ -7,13 +7,15 @@
 
 #include "command_defs.h"
 #include "../repl/repl.h"
+#include "../common.h"
 
 static void execute(const char *command) {
     system(command);
 }
 
 static void clear() {
-    execute("clear");
+    if (isWindows()) execute("cls");
+    else execute("clear");
 }
 
 bool qualified_command(const char *command) {

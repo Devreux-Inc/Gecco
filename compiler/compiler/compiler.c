@@ -9,10 +9,9 @@
 #include <string.h>
 #include "../common.h"
 #include "compiler.h"
-#include "memory.h"
 #include "../scanner.h"
 #include "../object.h"
-#include "../memory.h"
+#include "../memory/memory.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "../debug.h"

@@ -3,6 +3,10 @@
 //
 
 #include "command_defs.h"
+
+#include <string.h>
+
+#include "../common.h"
 #include "../formatting/ansi_colors.h"
 #include "../version/version.h"
 
@@ -15,31 +19,44 @@ Command commands[] = {
     {"verbose", "--verbose", "| Verbose mode."}
 };
 
-char* examples[] = {
-    {BOLD "gecco" RESET CYAN " --run" RESET BOLD MAGENTA " main.gec" RESET CYAN " --verbose" RESET " \n       | Runs a file called" BOLD MAGENTA " main.gec" RESET " in verbose mode."},
-    {BOLD "gecco" RESET CYAN " --run" RESET BOLD MAGENTA " main.gec \n " RESET "      | Runs a file called" BOLD MAGENTA " main.gec" RESET "."}
+Example examples[] = {
+    {
+        BOLD "gecco" RESET CYAN " --run" RESET BOLD MAGENTA " main.gec" RESET CYAN " --verbose" RESET
+        " \n       | Runs a file called" BOLD MAGENTA " main.gec" RESET " in verbose mode."
+    },
+    {
+        BOLD "gecco" RESET CYAN " --run" RESET BOLD MAGENTA " main.gec \n " RESET "      | Runs a file called" BOLD
+        MAGENTA " main.gec" RESET "."
+    }
 };
 
 static void example_command() {
-    printf(BOLD "\n          📖   Example Command(s)  📖\n" RESET);
+    if (isWindows()) printf(BOLD "\n              Example Command(s)   \n" RESET);
+    else printf(BOLD "\n          📖   Example Command(s)  📖\n" RESET);
     for (int i = 0; i < sizeof(examples) / sizeof(examples[0]); i++) {
-        const char* example = examples[i];
-        printf("▫️ %s\n", example);
+        const char *example = examples[i].example;
+
+        if (isWindows()) printf("%s\n", example);
+        else printf("▫️ %s\n", example);
     }
 }
 
 static void helper() {
-    printf(BOLD "\n          ⚠️ Why Am I Seeing This? ⚠️" RESET "\n");
-    printf("You either inputted an invalid command or used the help command.\nThe above list provides all possible commands "
-           "that can follow\n the" BOLD " gecco " RESET "main command. Need more help? Go to https://gecco.dev");
+    if (isWindows()) printf(BOLD "\n             Why Am I Seeing This?   " RESET "\n");
+    else printf(BOLD "\n          ⚠️ Why Am I Seeing This? ⚠️" RESET "\n");
+    printf(
+        "You either inputted an invalid command or used the help command.\nThe above list provides all possible commands "
+        "that can follow\n the" BOLD " gecco " RESET "main command. Need more help? Go to https://gecco.dev");
     printf("\n");
 }
 
 void list_commands() {
-    printf( BOLD "\n%2s\n" RESET, "           🔎  Available Commands  🔎           ");
+    if (isWindows()) printf(BOLD "\n%2s\n" RESET, "              Available Commands              ");
+    else printf(BOLD "\n%2s\n" RESET, "           🔎  Available Commands  🔎           ");
     for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
         const Command command = commands[i];
-        printf(GREEN BOLD "▫️ %s:" RESET BOLD " %10s" RESET CYAN " %10s\n" RESET, command.name, command.usage, command.helper);
+        printf(GREEN BOLD "%s:" RESET BOLD " %10s" RESET CYAN " %10s\n" RESET, isWindows() ? command.name : strcat("▫️ ", command.name), command.usage,
+               command.helper);
     }
 
     helper();
@@ -53,7 +70,8 @@ void print_version() {
 }
 
 void print_credits() {
-    printf("%s\n", "2024 © The Gecco Contributors.");
+    if (isWindows()) printf("%s\n", "Copyright 2024 The Gecco Contributors.");
+    else printf("%s\n", "2024 © The Gecco Contributors.");
 }
 
 void unknown_command(const char *command) {

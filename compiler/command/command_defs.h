@@ -14,6 +14,10 @@ typedef struct {
 
 } Command;
 
+typedef struct {
+    char* example;
+} Example;
+
 void list_commands();
 void unknown_command(const char *command);
 void print_version();

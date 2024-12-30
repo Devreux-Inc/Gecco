@@ -34,4 +34,5 @@ add_executable(Gecco
         compiler/repl/repl.c
         compiler/repl/repl.h
         compiler/version/version.h
+        compiler/common.c
 )

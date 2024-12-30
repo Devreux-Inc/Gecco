@@ -9,6 +9,7 @@
 #include "command/command_defs.h"
 #include "command/command_handler.h"
 #include "err/status.h"
+#include "repl/repl.h"
 
 /**
  * Gets the extension of a passed in file.
@@ -123,7 +124,8 @@ int main(const int argc, const char *argv[]) {
         freeVM();
         return exit_status(EXIT_FAILURE_MAJOR);
     } else {
-        unknown_command(argv[2]);
+        //unknown_command(argv[2]);
+        repl();
 
         freeVM();
         return exit_status(EXIT_FAILURE_MINOR);
