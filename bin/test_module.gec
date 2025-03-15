@@ -1,0 +1,4 @@
+// Simple module with exports for testing
+exp const X: Number = 100;
+exp const Y: Number = 200;
+exp const MSG: String = "Hello from module";

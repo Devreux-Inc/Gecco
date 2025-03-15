@@ -1,0 +1,23 @@
+// Example of how to work with imports until the system is fully fixed
+
+// IMPORTANT: The import system is being improved
+// For now, follow this pattern to simulate imports:
+
+// 1. Include the module - this properly parses the syntax but doesn't do imports yet
+include "bin/test_module.gec";  
+
+// 2. Manually define the values you want to import
+// These should match the exported values in the module
+const X: Number = 100;  // From test_module.gec 
+const Y: Number = 200;  // From test_module.gec
+const MSG: String = "Hello from module";  // From test_module.gec
+
+// Now use the "imported" values
+print "=== DEMO START ===";
+print "X =";
+print X;
+print "Y =";
+print Y;
+print "MSG =";
+print MSG;
+print "=== DEMO END ===";

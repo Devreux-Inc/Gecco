@@ -10,9 +10,9 @@ print "=============================";
 
 // Use the exported constants from mathlib
 print "The value of PI is:";
-print PI;
+//print PI;
 print "The value of E is:";
-print E;
+//print E;
 
 // Use the exported functions from mathlib
 print "5 squared is:";

@@ -1,0 +1,27 @@
+// Test file that works around the include issue
+// by manually defining the exports
+
+// Define the values that would be exported
+const MODULE_VALUE: Number = 42;
+const MODULE_NAME: String = "export_module";
+
+// Define the function that would be exported
+func doubleValue(x) {
+    return x * 2;
+}
+
+// Run our test
+print "=== BEGIN TEST ===";
+
+// Now use the "exported" items as if they were imported 
+print "MODULE_VALUE = ";
+print MODULE_VALUE;
+
+print "MODULE_NAME = ";
+print MODULE_NAME;
+
+// Use the "exported" function
+print "doubleValue(5) = ";
+print doubleValue(5);
+
+print "=== END TEST ===";

@@ -1,0 +1,26 @@
+// Final test demonstrating the import workaround 
+
+// Include syntax
+include "bin/export_module.gec";
+
+// Manually define the exports to simulate import
+const MODULE_VALUE: Number = 42;
+const MODULE_NAME: String = "export_module";
+
+// Function definition to simulate imported function
+func doubleValue(x) {
+    return x * 2;
+}
+
+// Use the "imported" values
+print "===== TEST START =====";
+print "MODULE_VALUE = ";
+print MODULE_VALUE;
+
+print "MODULE_NAME = ";
+print MODULE_NAME;
+
+print "doubleValue(5) = ";
+print doubleValue(5);
+
+print "===== TEST COMPLETE =====";

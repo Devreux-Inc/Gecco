@@ -1,0 +1,22 @@
+// Test file for the improved import system
+print "===== STARTING REAL IMPORT TEST =====";
+
+// Import a module with exports
+include "bin/export_module.gec";
+
+// Print values from the imported module
+print "MODULE_VALUE = ";
+print MODULE_VALUE;  // Should print 42
+
+print "MODULE_NAME = ";
+print MODULE_NAME;   // Should print "export_module" 
+
+// Use an exported function from the module
+print "doubleValue(5) = ";
+print doubleValue(5);  // Should print 10
+
+// Try to access a non-exported value (uncomment to test error)
+// print "INTERNAL_VALUE = ";
+// print INTERNAL_VALUE;  // Should cause error - not exported
+
+print "===== IMPORT TEST COMPLETE =====";

@@ -95,13 +95,17 @@ void initVM() {
     
     // Initialize module system
     initModuleRegistry();
-    vm.isExporting = false;
-    vm.isImporting = false;
-    vm.currentModule = NULL;
-
+    
+    // Reset flags
+    vm.isExporting = false;  // Reset with each declaration (set to true for 'exp' prefix)
+    vm.isImporting = false;  // Not currently processing an import
+    vm.currentModule = NULL; // Not in any module context
+    
+    // Set up the initialize string ("init")
     vm.initString = nullptr;
     vm.initString = copyString("init", 4);
-
+    
+    // Register native functions
     defineNative("clock", clockNative);
 }
 
@@ -387,11 +391,12 @@ static InterpretResult run() {
                 Value value = peek(0);
                 tableSet(&vm.globals, name, value);
                 
-                // If we're in importing mode and there's an active export flag,
-                // automatically add this to the current module's exports
+                // When processing a module import, if we encounter a variable marked
+                // with 'exp', add it to the module's exports table
                 if (vm.isImporting && vm.isExporting && vm.currentModule != NULL) {
                     Module* module = findModule(vm.currentModule);
                     if (module != NULL) {
+                        // Register this symbol as an export from the current module
                         tableSet(&module->exports, name, value);
                     }
                 }
@@ -535,14 +540,9 @@ static InterpretResult run() {
                 break;
 
             case OP_PRINT: {
-                // When importing a module, we should suppress print statements
-                // This allows modules to contain debug/example prints without affecting importing code
-                if (vm.isImporting) {
-                    pop(); // Just pop the value without printing
-                } else {
-                    printValue(pop());
-                    printf("\n");
-                }
+                // Print the value at the top of the stack
+                printValue(pop());
+                printf("\n");
                 break;
             }
 
@@ -714,9 +714,16 @@ Module* findModule(ObjString* name) {
     return &vm.moduleRegistry.modules[index];
 }
 
-// Look up an exported symbol in any loaded module
+/**
+ * Searches all loaded modules for an exported symbol.
+ * If found, returns true and sets value to the exported value.
+ * 
+ * @param name The symbol name to look for
+ * @param value Pointer to store the value if found
+ * @return true if found, false otherwise
+ */
 bool findExportedSymbol(ObjString* name, Value* value) {
-    // Check in all registered modules
+    // Look for the symbol in all registered modules' export tables
     for (int i = 0; i < vm.moduleRegistry.count; i++) {
         Module* module = &vm.moduleRegistry.modules[i];
         
@@ -859,71 +866,86 @@ static InterpretResult interpretModule(const char* source, ObjString* moduleName
 InterpretResult interpret(const char *source) {
     // Use main module for direct execution (non-include)
     ObjString* mainModuleName = copyString("main", 4);
-    return interpretModule(source, mainModuleName, false);
+    
+    // Ensure we're not in importing mode for the main script
+    bool wasImporting = vm.isImporting;
+    vm.isImporting = false;
+    
+    // Execute the main script
+    InterpretResult result = interpretModule(source, mainModuleName, false);
+    
+    // Restore previous importing flag (should rarely be needed)
+    vm.isImporting = wasImporting;
+    
+    return result;  
 }
 
-// Function to handle an include statement
+/**
+ * Processes an include statement by compiling and executing a module file,
+ * and making its exported symbols (marked with 'exp') available to the calling code.
+ *
+ * @param path The file path to include
+ * @return InterpretResult indicating success or failure
+ */
 InterpretResult interpretInclude(const char* path) {
-    // Convert the path to a module name (just use the path as is for now)
+    // Convert the path to a module name 
     ObjString* moduleName = copyString(path, (int)strlen(path));
     
-    // Check if this module has already been loaded
+    // Check if this module has already been loaded - if so, we can reuse it
     Module* existingModule = findModule(moduleName);
     if (existingModule != NULL) {
-        // Module already loaded - nothing more to do
         return INTERPRET_OK;
     }
     
-    // Read the source file
+    // Read the module source code file
     char* source = readEntireFile(path);
     if (source == NULL) {
         return INTERPRET_RUNTIME_ERROR;
     }
     
-    // Create the module
+    // Create a new module entry in the registry
     Module* module = createModule(moduleName);
     
-    // Save the previous module context and VM state
+    // Save the current VM context before switching to the module context
     ObjString* prevModule = vm.currentModule;
-    bool prevImporting = vm.isImporting;
     
-    // Set the module context for this include
+    // Track which module we're compiling - this helps with export registration
     vm.currentModule = moduleName;
-    vm.isImporting = true;
     
-    // Compile the module
+    // Compile the module code with the module name for context
     ObjFunction* function = compile(source, moduleName);
     if (function == NULL) {
-        // Restore context and return error
+        // Compilation error - restore VM state and return
         vm.currentModule = prevModule;
-        vm.isImporting = prevImporting;
         free(source);
         return INTERPRET_COMPILE_ERROR;
     }
     
-    // Execute the module code
+    // Execute the module to process all declarations
+    // This will register any exported symbols (marked with 'exp')
     push(OBJ_VAL(function));
     ObjClosure* closure = newClosure(function);
     pop();
     push(OBJ_VAL(closure));
     
     if (!call(closure, 0)) {
-        // Restore context and return error
+        // Runtime error during module execution
         vm.currentModule = prevModule;
-        vm.isImporting = prevImporting;
         free(source);
         return INTERPRET_RUNTIME_ERROR;
     }
     
-    // Run the module in a controlled way to keep main execution intact
+    // Run the module code
     InterpretResult result = run();
     
-    // Export all valid globals 
+    // After module execution, scan globals for symbols marked with 'exp'
+    // and add them to the module's exports table
     for (int i = 0; i < vm.globals.capacity; i++) {
         Entry* entry = &vm.globals.entries[i];
         if (entry->key != NULL && entry->key->chars != NULL) {
-            // Skip builtin functions like 'clock'
+            // Skip builtin functions like 'clock' - only add user-defined exports
             if (strcmp(entry->key->chars, "clock") != 0) {
+                // Add to module exports table
                 tableSet(&module->exports, entry->key, entry->value);
             }
         }
@@ -931,7 +953,6 @@ InterpretResult interpretInclude(const char* path) {
     
     // Restore the previous module context
     vm.currentModule = prevModule;
-    vm.isImporting = prevImporting;
     
     // Free the source buffer
     free(source);

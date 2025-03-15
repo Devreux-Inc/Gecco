@@ -1,3 +1,5 @@
-print "BEFORE";
-print "MORE STATEMENTS";
-print "AFTER";
+// Simplest possible test - no importing
+print "First message";
+print "Second message";
+print "Third message";
+print "Last message";

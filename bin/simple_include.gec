@@ -1,0 +1,10 @@
+// Simple include test with no export usage
+
+print "Starting test";
+print "Before include";
+
+// Include a module but don't use its exports
+include "bin/export_module.gec";
+
+print "After include";
+print "Test complete";

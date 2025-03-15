@@ -1,0 +1,16 @@
+// Simple import test
+
+print "=== TEST START ===";
+
+// Import the module
+include "bin/test_module.gec";
+
+// Use exported values
+print "X =";
+print X;
+print "Y =";
+print Y;
+print "MSG =";
+print MSG;
+
+print "=== TEST END ===";

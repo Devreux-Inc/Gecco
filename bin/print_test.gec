@@ -1,0 +1,4 @@
+// Simple test for print statements
+print "Hello, World!";
+print 42;
+print "This should be visible";

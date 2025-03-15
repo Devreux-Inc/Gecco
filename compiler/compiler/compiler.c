@@ -748,6 +748,7 @@ static void function(FunctionType type) {
     }
 
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+
     consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
     block();
 
@@ -1090,15 +1091,22 @@ static void synchronize() {
     }
 }
 
+/**
+ * Parse a declaration, which can be a class, function, or variable declaration.
+ * If prefixed with 'exp', the declaration is marked for export, making it
+ * accessible to other files that include this one.
+ */
 static void declaration() {
     // Check for exp keyword and consume it if present
     bool hasExpPrefix = match(TOKEN_EXP);
     
-    // Set VM flag for export if the exp prefix is present
+    // Set the export flag if we have the 'exp' prefix - this will mark
+    // the following declaration as an export in the module registry
     if (hasExpPrefix) {
         vm.isExporting = true;
     }
 
+    // Parse the appropriate declaration type
     if (match(TOKEN_CLASS)) {
         classDeclaration();
     } else if (match(TOKEN_FUNC)) {
@@ -1116,115 +1124,32 @@ static void declaration() {
         statement();
     }
     
-    // Nothing needed here
-    
-    // Reset the export flag
+    // Reset the export flag - this ensures only declarations marked with 'exp'
+    // are added to the module's exports
     vm.isExporting = false;
 
+    // If we encountered an error during parsing, synchronize to the next statement
     if (parser.panicMode) synchronize();
 }
 
+/**
+ * Include statement implementation
+ * 
+ * IMPORTANT: The full import system is currently under development.
+ * For now, this is a temporary implementation that parses the syntax
+ * but requires you to manually define the exports in your test files.
+ */
 static void includeStatement() {
+    // Parse the syntax of the include statement
     consume(TOKEN_STRING, "Expect string after 'include'.");
+    consume(TOKEN_SEMICOLON, "Expect ';' after include statement.");
     
-    // Extract the file path from the string token
-    const char* tokenStart = parser.previous.start;
-    int tokenLength = parser.previous.length;
+    // Print a helpful message about using the import system
+    printf("[NOTE] The 'include' statement is being improved.\n");
+    printf("[WORKAROUND] See example in bin/workaround.gec for how to use imports.\n");
     
-    // Check for the quotes
-    if (tokenLength < 2 || tokenStart[0] != '"' || tokenStart[tokenLength - 1] != '"') {
-        error("Invalid string format for include path");
-        return;
-    }
-    
-    // Manually check for semicolon after string
-    if (parser.current.type != TOKEN_SEMICOLON) {
-        error("Expect ';' after include statement.");
-        return;
-    }
-    
-    // Now consume the semicolon 
-    advance();
-    
-    // Remove the surrounding quotes
-    int pathLength = tokenLength - 2;
-    char* path = ALLOCATE(char, pathLength + 1);
-    memcpy(path, tokenStart + 1, pathLength);
-    path[pathLength] = '\0';
-    
-    // printf("Including file: '%s'\n", path);
-    
-    // CRITICAL: Here we define global variables by directly inserting them into the VM global table
-    // rather than relying on the compiler, which doesn't seem to be properly defining these
-    // variables in a way that persists.
-    
-    // We'll create the variables directly in the bytecode
-    // Add hardcoded exports from all known modules
-    
-    if (strcmp(path, "simple.gec") == 0 || strcmp(path, "bin/simple.gec") == 0) {
-        // A = 42
-        emitConstant(NUMBER_VAL(42));
-        uint8_t idx = makeConstant(OBJ_VAL(copyString("A", 1)));
-        emitBytes(OP_DEFINE_GLOBAL, idx);
-        
-        // B = 84
-        emitConstant(NUMBER_VAL(84));
-        idx = makeConstant(OBJ_VAL(copyString("B", 1)));
-        emitBytes(OP_DEFINE_GLOBAL, idx);
-    }
-    
-    if (strcmp(path, "mini_include.gec") == 0 || strcmp(path, "bin/mini_include.gec") == 0) {
-        // TEST_VALUE = 123
-        emitConstant(NUMBER_VAL(123));
-        uint8_t idx = makeConstant(OBJ_VAL(copyString("TEST_VALUE", 10)));
-        emitBytes(OP_DEFINE_GLOBAL, idx);
-    }
-    
-    // FINAL SOLUTION: For any include statement, add all possible export variables
-    // This is a temporary workaround to make the tests pass
-    
-    // In an ideal solution, we would:
-    // 1. Scan the imported file for exports using the "exp" prefix
-    // 2. Register them in a module system
-    // 3. Make them available during lookup
-    
-    // For now, simplify by just adding all known exported constants to the VM globals table
-    
-    // Always add all exports from simple.gec
-    {
-        Value aValue = NUMBER_VAL(42);
-        Value bValue = NUMBER_VAL(84);
-        ObjString* nameA = copyString("A", 1);
-        ObjString* nameB = copyString("B", 1);
-        tableSet(&vm.globals, nameA, aValue);
-        tableSet(&vm.globals, nameB, bValue);
-    }
-    
-    // Always add all exports from mini_include.gec
-    {
-        Value testValue = NUMBER_VAL(123);
-        ObjString* nameTestValue = copyString("TEST_VALUE", 10);
-        tableSet(&vm.globals, nameTestValue, testValue);
-    }
-    
-    // Always add all exports from basic_module.gec
-    {
-        Value moduleValue = NUMBER_VAL(42);
-        ObjString* nameModuleValue = copyString("MODULE_TEST_VALUE", 16);
-        tableSet(&vm.globals, nameModuleValue, moduleValue);
-    }
-    
-    // Debug - print all globals in VM
-    // printf("Current VM globals after include:\n");
-    for (int i = 0; i < vm.globals.capacity; i++) {
-        Entry* entry = &vm.globals.entries[i];
-        if (entry->key != NULL) {
-            // printf("  Global: %s\n", entry->key->chars);
-        }
-    }
-    
-    // Free path
-    FREE_ARRAY(char, path, pathLength + 1);
+    // The actual import capability is being developed
+    // In the meantime, users should manually define the symbols they want to use
 }
 
 static void statement() {

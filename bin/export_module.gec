@@ -1,0 +1,18 @@
+// A module that exports constants, functions, and variables using the exp prefix
+
+// Export a constant number
+exp const MODULE_VALUE: Number = 42;
+
+// Export a constant string
+exp const MODULE_NAME: String = "export_module";
+
+// Export a function that doubles its input
+exp func doubleValue(x) {
+    return x * 2;
+}
+
+// Regular non-exported value (should not be accessible outside)
+const INTERNAL_VALUE: Number = 100;
+
+// This print should be suppressed when imported
+print "This message should NOT appear when the module is imported";

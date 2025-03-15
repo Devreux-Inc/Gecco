@@ -1,19 +1,25 @@
-// This script is to debug the include functionality
+// This script is to debug the include functionality with the updated module system
+
+// Start with a marker to see if execution begins
+print "=== START DEBUGGING ===";
 
 // First, import a module 
 print "Before include:";
-include "mathutils.gec";
+include "bin/export_module.gec";
 print "After include:";
 
-// Print a message to see if each section is executed
-print "Debug script started";
+// Print a message to see if execution continues
+print "Debug script continuing...";
 
-// Call an exported function from the module (this may be undefined)
-print "Trying to call printPI():";
-printPI();
+// Try to access exported values from the module
+print "Trying to access MODULE_VALUE:";
+print MODULE_VALUE;  // Should be 42
 
-// Print the value of an exported constant directly (this may be undefined)
-print "Trying to access PI directly:";
-print PI;
+print "Trying to access MODULE_NAME:";
+print MODULE_NAME;   // Should be "export_module"
 
-print "Debug script completed";
+// Try to call an exported function from the module
+print "Trying to call doubleValue(5):";
+print doubleValue(5);  // Should print 10
+
+print "=== END DEBUGGING ===";
