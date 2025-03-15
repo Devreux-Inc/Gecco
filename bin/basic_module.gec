@@ -1,0 +1,2 @@
+// A simple module with just the bare minimum
+exp const MODULE_TEST_VALUE: Number = 42;

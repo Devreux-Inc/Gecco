@@ -58,6 +58,8 @@ typedef struct {
   // Module system
   ModuleRegistry moduleRegistry;
   bool isExporting;  // Flag to track if we're exporting a symbol
+  bool isImporting;  // Flag to indicate we're importing a module (collecting exports)
+  ObjString* currentModule;  // Current module being processed
 } VM;
 
 typedef enum {
@@ -79,5 +81,6 @@ extern Value pop();
 // Module system exports
 extern Module* findModule(ObjString* name);
 extern Module* createModule(ObjString* name);
+extern bool findExportedSymbol(ObjString* name, Value* value);
 
 #endif //vm_h

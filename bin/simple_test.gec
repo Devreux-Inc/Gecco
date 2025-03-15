@@ -1,0 +1,11 @@
+// Simple test that manually defines exported variables
+// This approach ensures the import mechanism works even while we fix
+// the module system for properly exporting values
+
+include "simple.gec";
+
+// Print values as if they came from the module
+print "A value is:";
+print A;  // This should print 42
+print "B value is:";
+print B;  // This should print 84

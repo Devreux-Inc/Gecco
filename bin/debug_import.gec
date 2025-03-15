@@ -1,0 +1,19 @@
+// This script is to debug the include functionality
+
+// First, import a module 
+print "Before include:";
+include "mathutils.gec";
+print "After include:";
+
+// Print a message to see if each section is executed
+print "Debug script started";
+
+// Call an exported function from the module (this may be undefined)
+print "Trying to call printPI():";
+printPI();
+
+// Print the value of an exported constant directly (this may be undefined)
+print "Trying to access PI directly:";
+print PI;
+
+print "Debug script completed";

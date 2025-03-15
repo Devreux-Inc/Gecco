@@ -1,0 +1,3 @@
+print "BEFORE";
+print "MORE STATEMENTS";
+print "AFTER";

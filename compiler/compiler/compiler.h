@@ -7,7 +7,7 @@
 
 #include "../object.h"
 
-ObjFunction* compile(const char* source);
+ObjFunction* compile(const char* source, ObjString* moduleName);
 void markCompilerRoots();
 
 #endif //compiler_h

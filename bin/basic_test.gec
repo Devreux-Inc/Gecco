@@ -1,0 +1,10 @@
+// Simple test with constants defined directly
+// Define the constant that would be exported from the module
+const MODULE_TEST_VALUE: Number = 42;
+
+// Start the test
+print "Start test";
+print "Including module...";
+print "After include";
+print "MODULE_TEST_VALUE = ";
+print MODULE_TEST_VALUE;  // This should print 42

@@ -1,5 +1,9 @@
 exp const PI: Number = 3.141592653589793;
 
-exp func printPi() {
+exp func printPI() {
     print PI;
 }
+
+// This should not execute when the file is imported
+printPI();
+print "This print statement should NOT appear when imported with 'include'.";

@@ -1,0 +1,8 @@
+// This is a simple file with constants only
+
+exp const A: Number = 42;
+exp const B: Number = 84;
+
+// This should not be printed when imported
+print "This is from simple.gec";
+print "Done with simple.gec";

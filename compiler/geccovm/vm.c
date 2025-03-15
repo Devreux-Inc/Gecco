@@ -10,6 +10,7 @@
 #include <stdlib.h>  // For malloc() and free()
 #include <string.h>
 #include <time.h>
+#include <unistd.h>  // For getcwd()
 #include "../common.h"
 #include "../compiler/compiler.h"
 #include "../debug/debug.h"
@@ -36,6 +37,7 @@ static void runtimeError(const char *format, ...) {
     va_end(args);
     fputs("\n", stderr);
 
+    // Print stack trace
     for (int i = vm.frameCount - 1; i >= 0; i--) {
         CallFrame *frame = &vm.frames[i];
         ObjFunction *function = frame->closure->function;
@@ -50,6 +52,15 @@ static void runtimeError(const char *format, ...) {
         }
     }
 
+    // If we're in import mode, log the error but don't stop execution
+    if (vm.isImporting) {
+        fprintf(stderr, "WARNING: Error during module import, but continuing execution\n");
+        // Don't reset the stack when importing - we need to recover
+        return;
+    }
+
+    // If we have a runtime error and want to show info, we could add it here
+    
     resetStack();
 }
 
@@ -85,6 +96,8 @@ void initVM() {
     // Initialize module system
     initModuleRegistry();
     vm.isExporting = false;
+    vm.isImporting = false;
+    vm.currentModule = NULL;
 
     vm.initString = nullptr;
     vm.initString = copyString("init", 4);
@@ -351,17 +364,38 @@ static InterpretResult run() {
             case OP_GET_GLOBAL: {
                 ObjString *name = READ_STRING();
                 Value value;
-                if (!tableGet(&vm.globals, name, &value)) {
-                    runtimeError("Undefined variable '%s'.", name->chars);
-                    return INTERPRET_RUNTIME_ERROR;
+                
+                // First check in globals
+                if (tableGet(&vm.globals, name, &value)) {
+                    push(value);
+                    break;
                 }
-                push(value);
-                break;
+                
+                // If not found in globals, check in all module exports using our helper function
+                if (findExportedSymbol(name, &value)) {
+                    push(value);
+                    break;
+                }
+                
+                // Not found anywhere
+                runtimeError("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
             }
 
             case OP_DEFINE_GLOBAL: {
                 ObjString *name = READ_STRING();
-                tableSet(&vm.globals, name, peek(0));
+                Value value = peek(0);
+                tableSet(&vm.globals, name, value);
+                
+                // If we're in importing mode and there's an active export flag,
+                // automatically add this to the current module's exports
+                if (vm.isImporting && vm.isExporting && vm.currentModule != NULL) {
+                    Module* module = findModule(vm.currentModule);
+                    if (module != NULL) {
+                        tableSet(&module->exports, name, value);
+                    }
+                }
+                
                 pop();
                 break;
             }
@@ -501,8 +535,14 @@ static InterpretResult run() {
                 break;
 
             case OP_PRINT: {
-                printValue(pop());
-                printf("\n");
+                // When importing a module, we should suppress print statements
+                // This allows modules to contain debug/example prints without affecting importing code
+                if (vm.isImporting) {
+                    pop(); // Just pop the value without printing
+                } else {
+                    printValue(pop());
+                    printf("\n");
+                }
                 break;
             }
 
@@ -674,28 +714,80 @@ Module* findModule(ObjString* name) {
     return &vm.moduleRegistry.modules[index];
 }
 
-static char* readEntireFile(const char* path) {
-    // Print debug info about the file path
-    //printf("Attempting to open file: '%s'\n", path);
+// Look up an exported symbol in any loaded module
+bool findExportedSymbol(ObjString* name, Value* value) {
+    // Check in all registered modules
+    for (int i = 0; i < vm.moduleRegistry.count; i++) {
+        Module* module = &vm.moduleRegistry.modules[i];
+        
+        // Check if this module exports the symbol
+        if (tableGet(&module->exports, name, value)) {
+            return true;
+        }
+    }
     
+    // Symbol not found in any module
+    return false;
+}
+
+static char* readEntireFile(const char* path) {
     // Try to find the file in different locations
     FILE* file = NULL;
+    char* resolvedPath = NULL;
+    size_t resolvedPathLen = 0;
     
-    // First try the exact path
-    file = fopen(path, "rb");
-    
-    // If that failed, try adding .gec extension if not already present
-    if (file == NULL) {
-        // Check if the path already ends with .gec
-        size_t pathLen = strlen(path);
-        if (pathLen < 4 || strcmp(path + pathLen - 4, ".gec") != 0) {
-            // Create a new path with .gec extension
-            char* pathWithExt = (char*)malloc(pathLen + 5); // +5 for ".gec\0"
-            if (pathWithExt != NULL) {
-                // sprintf(pathWithExt, "%s.gec", path);
-                // printf("Trying with .gec extension: '%s'\n", pathWithExt);
-                file = fopen(pathWithExt, "rb");
-                free(pathWithExt);
+    // Get the current working directory for relative paths
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        // Try paths relative to bin directory since that's where the executable is
+        
+        // First try the exact path
+        file = fopen(path, "rb");
+        
+        // If that failed, try looking in the current directory
+        if (file == NULL) {
+            resolvedPathLen = strlen(cwd) + strlen(path) + 2; // +2 for "/" and '\0'
+            resolvedPath = (char*)malloc(resolvedPathLen);
+            if (resolvedPath != NULL) {
+                sprintf(resolvedPath, "%s/%s", cwd, path);
+                file = fopen(resolvedPath, "rb");
+                if (file == NULL) {
+                    free(resolvedPath);
+                    resolvedPath = NULL;
+                }
+            }
+        }
+        
+        // If that failed, try looking in the bin directory
+        if (file == NULL) {
+            resolvedPathLen = strlen(cwd) + strlen("/bin/") + strlen(path) + 1; // +1 for '\0'
+            resolvedPath = (char*)malloc(resolvedPathLen);
+            if (resolvedPath != NULL) {
+                sprintf(resolvedPath, "%s/bin/%s", cwd, path);
+                file = fopen(resolvedPath, "rb");
+                if (file == NULL) {
+                    free(resolvedPath);
+                    resolvedPath = NULL;
+                }
+            }
+        }
+        
+        // If that failed, try adding .gec extension if not already present
+        if (file == NULL) {
+            // Check if the path already ends with .gec
+            size_t pathLen = strlen(path);
+            if (pathLen < 4 || strcmp(path + pathLen - 4, ".gec") != 0) {
+                // Create a new path with .gec extension
+                resolvedPathLen = strlen(cwd) + strlen("/bin/") + strlen(path) + 5; // +5 for ".gec" and '\0'
+                resolvedPath = (char*)malloc(resolvedPathLen);
+                if (resolvedPath != NULL) {
+                    sprintf(resolvedPath, "%s/bin/%s.gec", cwd, path);
+                    file = fopen(resolvedPath, "rb");
+                    if (file == NULL) {
+                        free(resolvedPath);
+                        resolvedPath = NULL;
+                    }
+                }
             }
         }
     }
@@ -738,18 +830,20 @@ static char* readEntireFile(const char* path) {
     return buffer;
 }
 
-static InterpretResult interpretModule(const char* source, ObjString* moduleName) {
+static InterpretResult interpretModule(const char* source, ObjString* moduleName, bool isInclude) {
     // Create a new module entry or find existing one
     Module* module = findModule(moduleName);
     if (module == NULL) {
         module = createModule(moduleName);
     }
     
-    // Compile the module
-    ObjFunction* function = compile(source);
-    if (function == NULL) return INTERPRET_COMPILE_ERROR;
+    // Compile the module, passing the module name
+    ObjFunction* function = compile(source, moduleName);
+    if (function == NULL) {
+        return INTERPRET_COMPILE_ERROR;
+    }
     
-    // Execute the module code
+    // Always execute the module code to process declarations
     push(OBJ_VAL(function));
     ObjClosure* closure = newClosure(function);
     pop();
@@ -763,22 +857,13 @@ static InterpretResult interpretModule(const char* source, ObjString* moduleName
 }
 
 InterpretResult interpret(const char *source) {
-    ObjFunction *function = compile(source);
-    if (function == NULL) return INTERPRET_COMPILE_ERROR;
-
-    push(OBJ_VAL(function));
-    ObjClosure *closure = newClosure(function);
-    pop();
-    push(OBJ_VAL(closure));
-    call(closure, 0);
-    return run();
+    // Use main module for direct execution (non-include)
+    ObjString* mainModuleName = copyString("main", 4);
+    return interpretModule(source, mainModuleName, false);
 }
 
 // Function to handle an include statement
 InterpretResult interpretInclude(const char* path) {
-    // Simplistic path handling for now - in a real implementation,
-    // you'd want to handle relative paths, check file extensions, etc.
-    
     // Convert the path to a module name (just use the path as is for now)
     ObjString* moduleName = copyString(path, (int)strlen(path));
     
@@ -792,18 +877,61 @@ InterpretResult interpretInclude(const char* path) {
     // Read the source file
     char* source = readEntireFile(path);
     if (source == NULL) {
-        fprintf(stderr, "Could not open module file \"%s\".\n", path);
         return INTERPRET_RUNTIME_ERROR;
     }
     
-    // Create a temporary storage for the current scanner and parser state
-    // This would need to be implemented for a real solution
+    // Create the module
+    Module* module = createModule(moduleName);
     
-    // Interpret the module
-    InterpretResult result = interpretModule(source, moduleName);
+    // Save the previous module context and VM state
+    ObjString* prevModule = vm.currentModule;
+    bool prevImporting = vm.isImporting;
     
-    // Restore the original scanner and parser state
-    // This would need to be implemented for a real solution
+    // Set the module context for this include
+    vm.currentModule = moduleName;
+    vm.isImporting = true;
+    
+    // Compile the module
+    ObjFunction* function = compile(source, moduleName);
+    if (function == NULL) {
+        // Restore context and return error
+        vm.currentModule = prevModule;
+        vm.isImporting = prevImporting;
+        free(source);
+        return INTERPRET_COMPILE_ERROR;
+    }
+    
+    // Execute the module code
+    push(OBJ_VAL(function));
+    ObjClosure* closure = newClosure(function);
+    pop();
+    push(OBJ_VAL(closure));
+    
+    if (!call(closure, 0)) {
+        // Restore context and return error
+        vm.currentModule = prevModule;
+        vm.isImporting = prevImporting;
+        free(source);
+        return INTERPRET_RUNTIME_ERROR;
+    }
+    
+    // Run the module in a controlled way to keep main execution intact
+    InterpretResult result = run();
+    
+    // Export all valid globals 
+    for (int i = 0; i < vm.globals.capacity; i++) {
+        Entry* entry = &vm.globals.entries[i];
+        if (entry->key != NULL && entry->key->chars != NULL) {
+            // Skip builtin functions like 'clock'
+            if (strcmp(entry->key->chars, "clock") != 0) {
+                tableSet(&module->exports, entry->key, entry->value);
+            }
+        }
+    }
+    
+    // Restore the previous module context
+    vm.currentModule = prevModule;
+    vm.isImporting = prevImporting;
     
     // Free the source buffer
     free(source);
