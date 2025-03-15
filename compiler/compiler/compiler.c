@@ -12,6 +12,7 @@
 #include "../scanner.h"
 #include "../object.h"
 #include "../memory/memory.h"
+#include "../geccovm/vm.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "../debug.h"
@@ -391,6 +392,27 @@ static void defineVariable(uint8_t global) {
     }
 
     emitBytes(OP_DEFINE_GLOBAL, global);
+    
+    // If this is an exported variable, add it to the module exports
+    if (vm.isExporting) {
+        // Extract the variable name from the constants
+        Value nameValue = current->function->chunk.constants.values[global];
+        ObjString* name = AS_STRING(nameValue);
+        
+        // Get the variable value from globals
+        Value value;
+        if (tableGet(&vm.globals, name, &value)) {
+            // Get the current module (or create one for the main script)
+            ObjString* moduleName = copyString("main", 4); // Default module name
+            Module* module = findModule(moduleName);
+            if (module == NULL) {
+                module = createModule(moduleName);
+            }
+            
+            // Add the variable to the module's exports
+            tableSet(&module->exports, name, value);
+        }
+    }
 }
 
 static uint8_t argumentList() {
@@ -646,6 +668,8 @@ ParseRule rules[] = {
     [TOKEN_CONST] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_WHILE] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_ANY] = {nullptr, nullptr, PREC_NONE},
+    [TOKEN_INCLUDE] = {nullptr, nullptr, PREC_NONE},
+    [TOKEN_EXP] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_ERROR] = {nullptr, nullptr, PREC_NONE},
     [TOKEN_EOF] = {nullptr, nullptr, PREC_NONE},
 };
@@ -740,6 +764,7 @@ static void classDeclaration() {
     declareVariable();
 
     emitBytes(OP_CLASS, nameConstant);
+    
     defineVariable(nameConstant);
 
     ClassCompiler classCompiler;
@@ -853,6 +878,7 @@ static void letDeclaration() {
         emitByte(OP_NULL);
     }
     consume(TOKEN_SEMICOLON, "Expect ';' after let declaration.");
+    
     defineVariable(global);
 }
 
@@ -871,6 +897,7 @@ static void constDeclaration() {
         error("const values must be defined.");
     }
     consume(TOKEN_SEMICOLON, "Expect ';' after const declaration.");
+    
     defineVariable(global);
 }
 
@@ -1012,6 +1039,14 @@ static void synchronize() {
 }
 
 static void declaration() {
+    // Check for exp keyword and consume it if present
+    bool hasExpPrefix = match(TOKEN_EXP);
+    
+    // Set VM flag for export if the exp prefix is present
+    if (hasExpPrefix) {
+        vm.isExporting = true;
+    }
+
     if (match(TOKEN_CLASS)) {
         classDeclaration();
     } else if (match(TOKEN_FUNC)) {
@@ -1023,15 +1058,72 @@ static void declaration() {
     } else if (match(TOKEN_CONST)) {
         constDeclaration();
     } else {
+        if (hasExpPrefix) {
+            error("'exp' prefix must be followed by class, func, var, let, or const");
+        }
         statement();
     }
+    
+    // Reset the export flag
+    vm.isExporting = false;
 
     if (parser.panicMode) synchronize();
+}
+
+static void includeStatement() {
+    consume(TOKEN_STRING, "Expect string after 'include'.");
+    
+    // Extract the file path from the string token - be careful with quotes
+    const char* tokenStart = parser.previous.start;
+    int tokenLength = parser.previous.length;
+    
+    // Sanity check for string format - should be at least 2 characters ("") 
+    if (tokenLength < 2 || tokenStart[0] != '"' || tokenStart[tokenLength - 1] != '"') {
+        error("Invalid string format for include path");
+        return;
+    }
+    
+    // Remove the surrounding quotes
+    int pathLength = tokenLength - 2;
+    char* path = ALLOCATE(char, pathLength + 1);
+    
+    // Copy the actual path without quotes
+    memcpy(path, tokenStart + 1, pathLength);
+    path[pathLength] = '\0';
+    
+    // Print debug info to help diagnose the issue
+    // printf("Including file: '%s' (length: %d)\n", path, pathLength);
+    
+    // Call VM function to include the file
+    InterpretResult result = interpretInclude(path);
+    
+    // Free the path string
+    FREE_ARRAY(char, path, pathLength + 1);
+    
+    // If there was an error, report it
+    if (result == INTERPRET_COMPILE_ERROR) {
+        error("Error compiling included file.");
+    } else if (result == INTERPRET_RUNTIME_ERROR) {
+        error("Error executing included file.");
+    }
+    
+    // Debug print to check current token
+    // printf("Current token type: %d, Previous token type: %d\n", parser.current.type, parser.previous.type);
+    //printf("Current token text: '%.*s', Previous token text: '%.*s'\n", parser.current.length, parser.current.start, parser.previous.length, parser.previous.start);
+    
+    // For now, assume include statements don't need semicolons since they're processed
+    // at compile time and the token stream might be corrupted after inclusion
+    // This is a temporary workaround - a proper solution would save and restore the parser state
+    
+    // Manually advance to next token to simulate consuming the semicolon
+    advance();
 }
 
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_INCLUDE)) {
+        includeStatement();
     } else if (match(TOKEN_FOR)) {
         forStatement();
     } else if (match(TOKEN_IF)) {

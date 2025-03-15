@@ -1,3 +1,5 @@
+include "mathutils.gec";
+
 class Math {
     add(x, y) {
         return x + y;
@@ -5,3 +7,4 @@ class Math {
 }
 
 print Math().add(10, 10);
+printPI();

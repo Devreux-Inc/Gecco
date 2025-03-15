@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "geccovm/vm.h"
 #include "command/command_defs.h"

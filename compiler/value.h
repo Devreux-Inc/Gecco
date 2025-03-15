@@ -30,6 +30,9 @@ typedef uint64_t Value;
 #define FALSE_VAL           ((Value)(uint64_t)(QNAN | TAG_FALSE))
 #define TRUE_VAL            ((Value)(uint64_t)(QNAN | TAG_TRUE))
 #define NULL_VAL            ((Value)(uint64_t)(QNAN | TAG_NIL))
+// Include math functions prototypes to fix linking
+double modulo(double inputA, double inputB);
+float power(float inputA, int inputB);
 #define NUMBER_VAL(num)     numToValue(num)
 #define OBJ_VAL(obj)        (Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj))
 
@@ -91,6 +94,7 @@ typedef struct {
 
 #define BOOL_VAL(value)   ((Value){VAL_BOOL, {.boolean = value}})
 #define NIL_VAL           ((Value){VAL_NIL, {.number = 0}})
+#define NULL_VAL           NIL_VAL
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
 //> Strings obj-val
 #define OBJ_VAL(object)   ((Value){VAL_OBJ, {.obj = (Obj*)object}})

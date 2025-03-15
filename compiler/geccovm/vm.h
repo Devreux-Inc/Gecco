@@ -26,6 +26,19 @@ typedef struct {
   Value* slots;
 } CallFrame;
 
+// Module system structures
+typedef struct {
+  ObjString* name;
+  Table exports;  // Exported symbols from this module
+} Module;
+
+typedef struct {
+  int count;
+  int capacity;
+  Module* modules;
+  Table moduleNames;  // Maps module names to indices
+} ModuleRegistry;
+
 typedef struct {
   CallFrame frames[FRAMES_MAX];
   int frameCount;
@@ -41,6 +54,10 @@ typedef struct {
   int grayCount;
   int grayCapacity;
   Obj** grayStack;
+  
+  // Module system
+  ModuleRegistry moduleRegistry;
+  bool isExporting;  // Flag to track if we're exporting a symbol
 } VM;
 
 typedef enum {
@@ -51,10 +68,16 @@ typedef enum {
 
 extern VM vm;
 
-void initVM();
-void freeVM();
-InterpretResult interpret(const char* source);
-void push(Value value);
-Value pop();
+// These functions need to be externally visible
+extern void initVM();
+extern void freeVM();
+extern InterpretResult interpret(const char* source);
+extern InterpretResult interpretInclude(const char* path);
+extern void push(Value value);
+extern Value pop();
+
+// Module system exports
+extern Module* findModule(ObjString* name);
+extern Module* createModule(ObjString* name);
 
 #endif //vm_h

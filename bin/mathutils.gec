@@ -1,0 +1,5 @@
+exp const PI: Number = 3.141592653589793;
+
+exp func printPi() {
+    print PI;
+}

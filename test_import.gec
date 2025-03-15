@@ -1,0 +1,34 @@
+// test_import.gec - Testing the import functionality
+
+// Include directives should have a semicolon even if the compiler doesn't check for it
+include "mathlib.gec";
+
+// Print a separator
+print "=============================";
+print "TESTING IMPORT FUNCTIONALITY";
+print "=============================";
+
+// Use the exported constants from mathlib
+print "The value of PI is:";
+print PI;
+print "The value of E is:";
+print E;
+
+// Use the exported functions from mathlib
+print "5 squared is:";
+print square(5);
+
+print "3 cubed is:";
+print cube(3);
+
+// Define a new function that uses the imported functions and constants
+func circleArea(radius) {
+  return PI * square(radius);
+}
+
+print "Area of circle with radius 2:";
+print circleArea(2);
+
+// Try a slightly more complex calculation
+print "Volume of sphere with radius 3:";
+print (4/3) * PI * cube(3);

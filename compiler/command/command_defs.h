@@ -18,9 +18,9 @@ typedef struct {
     char* example;
 } Example;
 
-void list_commands();
-void unknown_command(const char *command);
-void print_version();
-void print_credits();
+extern void list_commands();
+extern void unknown_command(const char *command);
+extern void print_version();
+extern void print_credits();
 
 #endif //COMMAND_DEFS_H

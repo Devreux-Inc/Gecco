@@ -24,7 +24,7 @@
 
 #define OUT_OF_MEMORY       100
 
-int exit_status(int status);
-int exit_without_status(int status);
+extern int exit_status(int status);
+extern int exit_without_status(int status);
 
 #endif //EXIT_H

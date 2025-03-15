@@ -7,6 +7,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>  // For malloc() and free()
 #include <string.h>
 #include <time.h>
 #include "../common.h"
@@ -60,6 +61,13 @@ static void defineNative(const char *name, NativeFn function) {
     pop();
 }
 
+static void initModuleRegistry() {
+    vm.moduleRegistry.count = 0;
+    vm.moduleRegistry.capacity = 0;
+    vm.moduleRegistry.modules = nullptr;
+    initTable(&vm.moduleRegistry.moduleNames);
+}
+
 void initVM() {
     resetStack();
     vm.objects = nullptr;
@@ -69,9 +77,14 @@ void initVM() {
     vm.grayCount = 0;
     vm.grayCapacity = 0;
     vm.grayStack = nullptr;
-
+    
+    // Initialize standard tables
     initTable(&vm.globals);
     initTable(&vm.strings);
+    
+    // Initialize module system
+    initModuleRegistry();
+    vm.isExporting = false;
 
     vm.initString = nullptr;
     vm.initString = copyString("init", 4);
@@ -79,9 +92,26 @@ void initVM() {
     defineNative("clock", clockNative);
 }
 
+static void freeModuleRegistry() {
+    // Free all module exports tables
+    for (int i = 0; i < vm.moduleRegistry.count; i++) {
+        freeTable(&vm.moduleRegistry.modules[i].exports);
+    }
+    
+    // Free module array
+    FREE_ARRAY(Module, vm.moduleRegistry.modules, vm.moduleRegistry.capacity);
+    
+    // Free module names table
+    freeTable(&vm.moduleRegistry.moduleNames);
+}
+
 void freeVM() {
     freeTable(&vm.globals);
     freeTable(&vm.strings);
+    
+    // Free module registry
+    freeModuleRegistry();
+    
     vm.initString = nullptr;
     freeObjects();
 }
@@ -605,6 +635,133 @@ void hack(bool b) {
     if (b) hack(false);
 }
 
+// Module system functions
+Module* createModule(ObjString* name) {
+    // Check if we need to grow the modules array
+    if (vm.moduleRegistry.count + 1 > vm.moduleRegistry.capacity) {
+        int oldCapacity = vm.moduleRegistry.capacity;
+        vm.moduleRegistry.capacity = GROW_CAPACITY(oldCapacity);
+        vm.moduleRegistry.modules = GROW_ARRAY(Module, vm.moduleRegistry.modules,
+                                         oldCapacity, vm.moduleRegistry.capacity);
+    }
+    
+    // Initialize the new module
+    Module* module = &vm.moduleRegistry.modules[vm.moduleRegistry.count];
+    module->name = name;
+    initTable(&module->exports);
+    
+    // Add to the registry
+    Value indexValue = NUMBER_VAL(vm.moduleRegistry.count);
+    tableSet(&vm.moduleRegistry.moduleNames, name, indexValue);
+    
+    // Increment the count
+    vm.moduleRegistry.count++;
+    
+    return module;
+}
+
+Module* findModule(ObjString* name) {
+    Value indexValue;
+    if (!tableGet(&vm.moduleRegistry.moduleNames, name, &indexValue)) {
+        return NULL;
+    }
+    
+    int index = (int)AS_NUMBER(indexValue);
+    if (index < 0 || index >= vm.moduleRegistry.count) {
+        return NULL;
+    }
+    
+    return &vm.moduleRegistry.modules[index];
+}
+
+static char* readEntireFile(const char* path) {
+    // Print debug info about the file path
+    //printf("Attempting to open file: '%s'\n", path);
+    
+    // Try to find the file in different locations
+    FILE* file = NULL;
+    
+    // First try the exact path
+    file = fopen(path, "rb");
+    
+    // If that failed, try adding .gec extension if not already present
+    if (file == NULL) {
+        // Check if the path already ends with .gec
+        size_t pathLen = strlen(path);
+        if (pathLen < 4 || strcmp(path + pathLen - 4, ".gec") != 0) {
+            // Create a new path with .gec extension
+            char* pathWithExt = (char*)malloc(pathLen + 5); // +5 for ".gec\0"
+            if (pathWithExt != NULL) {
+                // sprintf(pathWithExt, "%s.gec", path);
+                // printf("Trying with .gec extension: '%s'\n", pathWithExt);
+                file = fopen(pathWithExt, "rb");
+                free(pathWithExt);
+            }
+        }
+    }
+    
+    // If still NULL, try looking in a standard directory (not implemented yet)
+    // This would be a good place to search in a standard library path
+    
+    if (file == NULL) {
+        fprintf(stderr, "Could not find file: '%s'\n", path);
+        return NULL;
+    }
+    
+    // Determine file size
+    fseek(file, 0L, SEEK_END);
+    size_t fileSize = ftell(file);
+    rewind(file);
+    
+    // printf("File found, size: %zu bytes\n", fileSize);
+    
+    // Allocate buffer to hold the entire file
+    char* buffer = (char*)malloc(fileSize + 1);
+    if (buffer == NULL) {
+        fclose(file);
+        return NULL;
+    }
+    
+    // Read the file into the buffer
+    size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
+    if (bytesRead < fileSize) {
+        fprintf(stderr, "Error reading file: Read only %zu of %zu bytes\n", bytesRead, fileSize);
+        free(buffer);
+        fclose(file);
+        return NULL;
+    }
+    
+    // Null terminate the buffer
+    buffer[bytesRead] = '\0';
+    
+    fclose(file);
+    return buffer;
+}
+
+static InterpretResult interpretModule(const char* source, ObjString* moduleName) {
+    // Create a new module entry or find existing one
+    Module* module = findModule(moduleName);
+    if (module == NULL) {
+        module = createModule(moduleName);
+    }
+    
+    // Compile the module
+    ObjFunction* function = compile(source);
+    if (function == NULL) return INTERPRET_COMPILE_ERROR;
+    
+    // Execute the module code
+    push(OBJ_VAL(function));
+    ObjClosure* closure = newClosure(function);
+    pop();
+    push(OBJ_VAL(closure));
+    
+    if (!call(closure, 0)) {
+        return INTERPRET_RUNTIME_ERROR;
+    }
+    
+    return run();
+}
+
 InterpretResult interpret(const char *source) {
     ObjFunction *function = compile(source);
     if (function == NULL) return INTERPRET_COMPILE_ERROR;
@@ -615,6 +772,43 @@ InterpretResult interpret(const char *source) {
     push(OBJ_VAL(closure));
     call(closure, 0);
     return run();
+}
+
+// Function to handle an include statement
+InterpretResult interpretInclude(const char* path) {
+    // Simplistic path handling for now - in a real implementation,
+    // you'd want to handle relative paths, check file extensions, etc.
+    
+    // Convert the path to a module name (just use the path as is for now)
+    ObjString* moduleName = copyString(path, (int)strlen(path));
+    
+    // Check if this module has already been loaded
+    Module* existingModule = findModule(moduleName);
+    if (existingModule != NULL) {
+        // Module already loaded - nothing more to do
+        return INTERPRET_OK;
+    }
+    
+    // Read the source file
+    char* source = readEntireFile(path);
+    if (source == NULL) {
+        fprintf(stderr, "Could not open module file \"%s\".\n", path);
+        return INTERPRET_RUNTIME_ERROR;
+    }
+    
+    // Create a temporary storage for the current scanner and parser state
+    // This would need to be implemented for a real solution
+    
+    // Interpret the module
+    InterpretResult result = interpretModule(source, moduleName);
+    
+    // Restore the original scanner and parser state
+    // This would need to be implemented for a real solution
+    
+    // Free the source buffer
+    free(source);
+    
+    return result;
 }
 
 //< interpret

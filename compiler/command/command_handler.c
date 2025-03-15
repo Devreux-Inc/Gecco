@@ -3,11 +3,13 @@
 //
 
 #include <string.h>
-#include "command_handler.h"
+#include <stdlib.h>  // For system() function
+#include <stdbool.h>  // For bool type
 
+#include "../common.h"
+#include "command_handler.h"
 #include "command_defs.h"
 #include "../repl/repl.h"
-#include "../common.h"
 
 static void execute(const char *command) {
     system(command);

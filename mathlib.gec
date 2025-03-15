@@ -1,0 +1,22 @@
+// mathlib.gec - A simple math library module
+
+// Export constants using the exp prefix
+exp const PI : Number = 3.14159;
+exp const E : Number = 2.71828;
+
+// Export functions using the exp prefix
+exp func square(x) {
+  return x * x;
+}
+
+exp func cube(x) {
+  return x * x * x;
+}
+
+// Private function not exported
+func _private_helper() {
+  print "This is an internal function";
+}
+
+// Print a message when this module is loaded
+print "Math library loaded successfully";

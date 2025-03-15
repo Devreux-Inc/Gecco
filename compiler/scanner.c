@@ -6,6 +6,7 @@
 
 #include <string.h>
 
+#include "common.h"
 #include "scanner.h"
 
 typedef struct {
@@ -122,6 +123,7 @@ static TokenType identifierType() {
                     case 'y': return checkKeyword(1, 2, "y", TOKEN_ANY);
                 }
             }
+            break;
         //===---- C ----====
         case 'c':
             if (scanner.current - scanner.start > 1) {
@@ -130,8 +132,16 @@ static TokenType identifierType() {
                     case 'o': return checkKeyword(2, 3, "nst", TOKEN_CONST);
                 }
             }
-        //===---- C ----====
-        case 'e': return checkKeyword(1, 3, "lse", TOKEN_ELSE);
+            break;
+        //===---- E ----====
+        case 'e':
+            if (scanner.current - scanner.start > 1) {
+                switch (scanner.start[1]) {
+                    case 'l': return checkKeyword(2, 2, "se", TOKEN_ELSE);
+                    case 'x': return checkKeyword(2, 1, "p", TOKEN_EXP);
+                }
+            }
+            break;
         //===---- F ----====
         case 'f':
             if (scanner.current - scanner.start > 1) {
@@ -142,8 +152,15 @@ static TokenType identifierType() {
                 }
             }
             break;
-        //===---- F ----====
-        case 'i': return checkKeyword(1, 1, "f", TOKEN_IF);
+        //===---- I ----====    
+        case 'i':
+            if (scanner.current - scanner.start > 1) {
+                switch (scanner.start[1]) {
+                    case 'f': return checkKeyword(1, 1, "f", TOKEN_IF);
+                    case 'n': return checkKeyword(2, 5, "clude", TOKEN_INCLUDE);
+                }
+            }
+            break;
         case 'l': return checkKeyword(1, 2, "et", TOKEN_LET);
         case 'n': return checkKeyword(1, 3, "ull", TOKEN_NULL);
         case 'o': return checkKeyword(1, 1, "r", TOKEN_OR);

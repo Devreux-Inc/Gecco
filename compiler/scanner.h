@@ -28,7 +28,10 @@ typedef enum {
     TOKEN_PRINT, TOKEN_RETURN, TOKEN_SUPER, TOKEN_THIS,
     TOKEN_TRUE, TOKEN_VAR, TOKEN_LET, TOKEN_CONST, TOKEN_WHILE,
     TOKEN_ANY,
-
+    
+    // Module system
+    TOKEN_INCLUDE, TOKEN_EXP,
+    
     TOKEN_ERROR, TOKEN_EOF
 } TokenType;
 
